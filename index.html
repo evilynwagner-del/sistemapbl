@@ -655,25 +655,98 @@ var TABS_LAWYER=[
 ];
 
 function buildTabs(){
-  var tabs=currentUser.role==='admin'?TABS_ADMIN:TABS_LAWYER;
-  document.getElementById('tabs-bar').innerHTML=tabs.map(function(t,i){
-    return'<button class="tb'+(i===0?' on':'')+'" onclick="renderContent('+i+',this)">'+t.label+'</button>';
-  }).join('');
+  var TABS_A=[
+    {label:'Dashboard',fn:pageDashboard},
+    {label:'Processos',fn:pageProcessos},
+    {label:'Lancamentos',fn:pageLancamentos},
+    {label:'Campanhas',fn:pageCampanhas},
+    {label:'Advogados',fn:pageAdvogados},
+    {label:'Resumo',fn:pageResumo},
+    {label:'Rel. Liquidados',fn:pageRelLiquidados},
+    {label:'Previsao',fn:pagePrevisaoEntradas},
+    {label:'Proc.Liq CertJud',fn:pageRelLiq2},
+    {label:'Proc.Comprados',fn:pageRelComp},
+    {label:'Rel.Geral CertJud',fn:pageRelGeral},
+    {label:'Proc.Pendentes',fn:pageRelPend},
+    {label:'Dist.Validacoes',fn:pageDistrib},
+    {label:'Usuarios',fn:pageUsuarios}
+  ];
+  var TABS_L=[
+    {label:'Dashboard',fn:pageDashboard},
+    {label:'Minha Comissao',fn:pageMinhaComissao}
+  ];
+  var tabs=currentUser.role==='admin'?TABS_A:TABS_L;
+  // also update global for renderContent
+  if(currentUser.role==='admin'){TABS_ADMIN=TABS_A;}else{TABS_LAWYER=TABS_L;}
+  var sb=document.getElementById('sidebar');
+  if(sb){
+    // sidebar layout
+    var adminLinks=[
+      {page:'dashboard',label:'Dashboard'},
+      {page:'processos',label:'Processos'},
+      {page:'lancamentos',label:'Lancamentos'},
+      {page:'campanhas',label:'Campanhas'},
+      {page:'advogados',label:'Advogados'},
+      {page:'resumo',label:'Resumo'},
+      {page:'reliquidados',label:'Rel. Liquidados'},
+      {page:'previsao',label:'Previsao de Entradas'},
+      {page:'relliq2',label:'Proc.Liq CertJud'},
+      {page:'relcomp',label:'Proc.Comprados'},
+      {page:'relgeral',label:'Rel.Geral CertJud'},
+      {page:'relpend',label:'Proc.Pendentes'},
+      {page:'distrib',label:'Dist.Validacoes'},
+      {page:'usuarios',label:'Usuarios'}
+    ];
+    var lawyerLinks=[
+      {page:'dashboard',label:'Dashboard'},
+      {page:'minhacomissao',label:'Minha Comissao'}
+    ];
+    var links=currentUser.role==='admin'?adminLinks:lawyerLinks;
+    sb.innerHTML=links.map(function(l,i){
+      return'<button class="nav-item'+(i===0?' active':'')+'" onclick="navigateTo('+i+',this)">'+l.label+'</button>';
+    }).join('');
+  } else {
+    // tabs layout fallback
+    var bar=document.getElementById('tabs-bar');
+    if(bar){
+      bar.innerHTML=tabs.map(function(t,i){
+        return'<button class="tb'+(i===0?' on':'')+'" onclick="renderContent('+i+',this)">'+t.label+'</button>';
+      }).join('');
+    }
+  }
+}
+function getTabsFn(){
+  return currentUser.role==='admin'?[
+    pageDashboard,pageProcessos,pageLancamentos,pageCampanhas,pageAdvogados,pageResumo,
+    pageRelLiquidados,pagePrevisaoEntradas,pageRelLiq2,pageRelComp,pageRelGeral,pageRelPend,pageDistrib,pageUsuarios
+  ]:[pageDashboard,pageMinhaComissao];
+}
+function navigateTo(n,btn){
+  document.querySelectorAll('.nav-item').forEach(function(t){t.classList.remove('active');});
+  if(btn)btn.classList.add('active');
+  else{var bs=document.querySelectorAll('.nav-item');if(bs[n])bs[n].classList.add('active');}
+  var fns=getTabsFn();
+  try{
+    var html=fns[n]?fns[n]():'';
+    document.getElementById('main-content').innerHTML=html||'<div class="empty">Pagina vazia.</div>';
+    currentTabIdx=n;
+    afterRender(n);
+  }catch(e){
+    document.getElementById('main-content').innerHTML='<div style="padding:30px;color:#c00">Erro: '+e.message+'</div>';
+  }
 }
 function renderContent(n,btn){
   currentTabIdx=n;
   document.querySelectorAll('.tb').forEach(function(t){t.classList.remove('on');});
   if(btn)btn.classList.add('on');
   else{var bs=document.querySelectorAll('.tb');if(bs[n])bs[n].classList.add('on');}
-  var tabs=currentUser.role==='admin'?TABS_ADMIN:TABS_LAWYER;
+  var fns=getTabsFn();
   try{
-    if(tabs[n]&&tabs[n].fn){
-      var html=tabs[n].fn();
-      document.getElementById('main-content').innerHTML=html||'<div class="empty">Pagina vazia.</div>';
-      afterRender(n);
-    }
+    var html=fns[n]?fns[n]():'';
+    document.getElementById('main-content').innerHTML=html||'<div class="empty">Pagina vazia.</div>';
+    afterRender(n);
   }catch(e){
-    document.getElementById('main-content').innerHTML='<div style="padding:30px;color:#c00">Erro ao carregar pagina: '+e.message+'</div>';
+    document.getElementById('main-content').innerHTML='<div style="padding:30px;color:#c00">Erro: '+e.message+'</div>';
   }
 }
 function afterRender(n){
