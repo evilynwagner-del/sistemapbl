@@ -4,7 +4,277 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PBL — Gestão de Comissões</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+// -- HELPERS --
+function fmtDate(d){if(!d)return'';try{var p=String(d).slice(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0];}catch(e){return d;}}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+
+// -- TIPOS DISTRIB --
+var TIPOS_DISTRIB=[
+  {id:'proc_val',label:'Validacao de Processo',val:5},
+  {id:'prec_val',label:'Validacao de Precatorio',val:5},
+  {id:'cont_val',label:'Validacao de Contrato',val:2},
+  {id:'capa',label:'Capa a Capa',val:10},
+  {id:'auditoria',label:'Auditoria',val:10}
+];
+
+// -- DIST. VALIDACOES --
+function pageDistrib(){
+  var isAdmin=currentUser&&currentUser.role==='admin';
+  var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  var tipoOpts=TIPOS_DISTRIB.map(function(t){return'<option value="'+t.id+'">'+t.label+' (R$'+t.val+')</option>';}).join('');
+  var rows=S.distribValidacao.slice().sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(m,i){
+    var an=(S.lawyers.find(function(l){return l.id===m.advogadoId;})||{name:'---'}).name;
+    var tp=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;})||{label:m.tipo,val:0};
+    var bg=i%2===0?'':'background:#f7faf9';
+    var del=isAdmin?'<button onclick="delDistrib('+JSON.stringify(m.id)+')" style="background:none;border:none;color:#c00;cursor:pointer;font-size:16px">x</button>':'';
+    return'<tr style="'+bg+'"><td style="padding:8px">'+fmtDate(m.data)+'</td><td style="padding:8px">'+esc(m.cliente||'')+'</td><td style="padding:8px">'+an+'</td><td style="padding:8px">'+tp.label+'</td><td style="padding:8px;text-align:right;color:#1D6B3A;font-weight:600">R$'+tp.val+'</td><td style="padding:8px;font-size:11px">'+esc(m.obs||'')+'</td><td>'+del+'</td></tr>';
+  }).join('');
+  var total=S.distribValidacao.reduce(function(s,m){var t=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;});return s+(t?t.val:0);},0);
+  return'<div class="pg-title">Distribuicao de Validacoes</div>'+
+    '<div class="card"><div class="g2">'+
+    '<div class="fg"><label>Data *</label><input type="date" id="dv-data" value="'+todayStr()+'"/></div>'+
+    '<div class="fg"><label>Cliente/Processo</label><input type="text" id="dv-cli" placeholder="Nome ou numero"/></div>'+
+    '<div class="fg"><label>Advogado *</label><select id="dv-adv"><option value="">Selecione...</option>'+advOpts+'</select></div>'+
+    '<div class="fg"><label>Tipo *</label><select id="dv-tipo">'+tipoOpts+'</select></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-top:8px"><label>Observacao</label><input type="text" id="dv-obs" placeholder="Detalhes (opcional)"/></div>'+
+    '<div style="text-align:right;margin-top:12px"><button class="btn bp" onclick="addDistrib()">+ Registrar</button></div>'+
+    '</div>'+
+    '<div class="st">Historico — Total comissoes: <strong style="color:#1D6B3A">R$'+total+'</strong></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd">'+
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px;text-align:left">Data</th><th style="padding:9px;text-align:left">Cliente</th><th style="padding:9px;text-align:left">Advogado</th><th style="padding:9px;text-align:left">Tipo</th><th style="padding:9px;text-align:right">Comissao</th><th style="padding:9px;text-align:left">Obs.</th><th></th></tr></thead>'+
+    '<tbody>'+(rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Nenhum lancamento.</td></tr>')+'</tbody>'+
+    '</table></div>';
+}
+function addDistrib(){
+  var data=document.getElementById('dv-data').value;
+  var cli=(document.getElementById('dv-cli').value||'').trim();
+  var adv=document.getElementById('dv-adv').value;
+  var tipo=document.getElementById('dv-tipo').value;
+  var obs=(document.getElementById('dv-obs').value||'').trim();
+  if(!data||!adv){alert('Preencha Data e Advogado.');return;}
+  S.distribValidacao.push({id:uid(),data:data,cliente:cli,advogadoId:adv,tipo:tipo,obs:obs});
+  saveData();navigate('distrib');
+}
+function delDistrib(id){
+  if(!confirm('Excluir?'))return;
+  S.distribValidacao=S.distribValidacao.filter(function(m){return m.id!==id;});
+  saveData();navigate('distrib');
+}
+
+// -- Liq Manual (Rel. Liquidados upgrade) --
+function addLiqManual(){
+  var tit=document.getElementById('lm-tit').value;
+  var data=document.getElementById('lm-data').value;
+  var proc=(document.getElementById('lm-proc').value||'').trim();
+  var adv=document.getElementById('lm-adv').value;
+  var valor=parseFloat(document.getElementById('lm-valor').value)||0;
+  var liq=document.getElementById('lm-liq').value;
+  if(!tit||!data||!adv||!valor){alert('Preencha Titularidade, Data, Advogado e Valor.');return;}
+  S.liqManual.push({id:uid(),titularidade:tit,data:data,processo:proc,advogadoId:adv,valor:valor,liquidacao:liq});
+  saveData();navigate('reliquidados');
+}
+function delLiqManual(id){
+  if(currentUser.role!=='admin'){alert('Apenas Admin pode excluir.');return;}
+  if(!confirm('Excluir?'))return;
+  S.liqManual=S.liqManual.filter(function(m){return m.id!==id;});
+  saveData();navigate('reliquidados');
+}
+
+// -- REL LIQ 2 --
+var relLiq2Data=null;
+function pageRelLiq2(){
+  var st=relLiq2Data?relLiq2Data.length+' processos':'Nenhum arquivo';
+  return'<div class="pg-title">Processos Liquidados (CertJud)</div>'+
+    '<div class="card"><label class="imp" for="f-rl2"><input type="file" id="f-rl2" class="fhide" accept=".xlsx,.xls" onchange="impRelLiq2(this)"/>'+
+    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Dias / Data / Vl.Compra / Vl.Liquidado / Faturamento / Desagio% / Indice</div></div>'+
+    '<span class="imp-status" id="rl2-st">'+st+'</span></label></div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0"><input id="rl2-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1"/>'+
+    '<input type="date" id="rl2-di" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
+    '<input type="date" id="rl2-df" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
+    '<button class="btn bp" onclick="renderRelLiq2()">Gerar</button></div>'+
+    '<div id="rl2-out"><div class="empty">Importe a planilha e clique em Gerar.</div></div>';
+}
+function impRelLiq2(input){
+  if(!input.files.length)return;
+  readXlsx(input.files[0],function(rows){
+    relLiq2Data=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
+      var dv=getCol(r,['Data','data']);var ds='';
+      if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),
+        dias:parseValor(getCol(r,['Dias','dias'])||0),data:ds,
+        vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
+        vlLiq:parseValor(getCol(r,['Valor Liquidado','valor liquidado'])||0),
+        fat:parseValor(getCol(r,['Faturamento','faturamento'])||0),
+        des:parseValor(getCol(r,['Desagio','Desagio %','desagio'])||0),
+        ind:parseValor(getCol(r,['Indice','indice'])||0)};
+    });
+    var el=document.getElementById('rl2-st');if(el)el.textContent=relLiq2Data.length+' processos';
+    showToast(relLiq2Data.length+' importados!');input.value='';
+  });
+}
+function renderRelLiq2(){
+  if(!relLiq2Data||!relLiq2Data.length){document.getElementById('rl2-out').innerHTML='<div class="empty">Importe primeiro.</div>';return;}
+  var q=(document.getElementById('rl2-q').value||'').toLowerCase();
+  var di=document.getElementById('rl2-di').value,df=document.getElementById('rl2-df').value;
+  var f=relLiq2Data.filter(function(r){return(!q||(r.cliente||'').toLowerCase().includes(q)||(r.proc||'').toLowerCase().includes(q))&&(!di||r.data>=di)&&(!df||r.data<=df);});
+  var tC=f.reduce(function(s,r){return s+r.vlComp;},0),tL=f.reduce(function(s,r){return s+r.vlLiq;},0),tF=f.reduce(function(s,r){return s+r.fat;},0);
+  document.getElementById('rl2-out').innerHTML=
+    '<div class="metrics" style="margin-bottom:16px">'+
+    '<div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div>'+
+    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
+    '<div class="mc gold"><div class="ml">Vl. Liquidado</div><div class="mv gold">'+fmt(tL)+'</div></div>'+
+    '<div class="mc '+(tF>=0?'green':'red')+'"><div class="ml">Faturamento</div><div class="mv">'+fmt(tF)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px;text-align:right">Dias</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Vl.Liquidado</th><th style="padding:9px;text-align:right">Faturamento</th><th style="padding:9px;text-align:right">Desagio%</th></tr></thead><tbody>'+
+    f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px;text-align:right">'+r.dias+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlLiq)+'</td><td style="padding:8px;text-align:right;color:'+(r.fat>=0?'#1D6B3A':'#c00')+'">'+fmt(r.fat)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
+    '</tbody></table></div>';
+}
+
+// -- REL COMP --
+var relCompData=null;
+function pageRelComp(){
+  var st=relCompData?relCompData.length+' processos':'Nenhum arquivo';
+  return'<div class="pg-title">Processos Comprados por Periodo</div>'+
+    '<div class="card"><label class="imp" for="f-rc"><input type="file" id="f-rc" class="fhide" accept=".xlsx,.xls" onchange="impRelComp(this)"/>'+
+    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl.Cliente / Vl.Compra / Prev.Ganho / Desagio%</div></div>'+
+    '<span class="imp-status" id="rc-st">'+st+'</span></label></div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0"><input id="rc-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1"/>'+
+    '<input type="date" id="rc-di" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
+    '<input type="date" id="rc-df" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
+    '<button class="btn bp" onclick="renderRelComp()">Gerar</button></div>'+
+    '<div id="rc-out"><div class="empty">Importe a planilha e clique em Gerar.</div></div>';
+}
+function impRelComp(input){
+  if(!input.files.length)return;
+  readXlsx(input.files[0],function(rows){
+    relCompData=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
+      var dv=getCol(r,['Data','data']);var ds='';
+      if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
+        vlCli:parseValor(getCol(r,['Valor Cliente','valor cliente'])||0),
+        vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
+        prevG:parseValor(getCol(r,['Prev. Ganho','prev ganho'])||0),
+        des:parseValor(getCol(r,['Desagio','Desagio %','desagio'])||0)};
+    });
+    var el=document.getElementById('rc-st');if(el)el.textContent=relCompData.length+' processos';
+    showToast(relCompData.length+' importados!');input.value='';
+  });
+}
+function renderRelComp(){
+  if(!relCompData||!relCompData.length){document.getElementById('rc-out').innerHTML='<div class="empty">Importe primeiro.</div>';return;}
+  var q=(document.getElementById('rc-q').value||'').toLowerCase();
+  var di=document.getElementById('rc-di').value,df=document.getElementById('rc-df').value;
+  var f=relCompData.filter(function(r){return(!q||(r.cliente||'').toLowerCase().includes(q))&&(!di||r.data>=di)&&(!df||r.data<=df);});
+  var tCli=f.reduce(function(s,r){return s+r.vlCli;},0),tC=f.reduce(function(s,r){return s+r.vlComp;},0),tG=f.reduce(function(s,r){return s+r.prevG;},0);
+  document.getElementById('rc-out').innerHTML=
+    '<div class="metrics" style="margin-bottom:16px">'+
+    '<div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div>'+
+    '<div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div>'+
+    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
+    '<div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Desagio%</th></tr></thead><tbody>'+
+    f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlCli)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right;color:#1D6B3A">'+fmt(r.prevG)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
+    '</tbody></table></div>';
+}
+
+// -- REL GERAL --
+var relGeralData=null;
+function pageRelGeral(){
+  var st=relGeralData?relGeralData.length+' linhas':'Nenhum arquivo';
+  return'<div class="pg-title">Relatorio Geral CertJud</div>'+
+    '<div class="card"><label class="imp" for="f-rg"><input type="file" id="f-rg" class="fhide" accept=".xlsx,.xls" onchange="impRelGeral(this)"/>'+
+    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Ano / Mes / Vl.Processo / Compra Mes / Recebimento Mes / Total / Despesa / Patrimonio Liquido</div></div>'+
+    '<span class="imp-status" id="rg-st">'+st+'</span></label></div>'+
+    '<div id="rg-out">'+(relGeralData?buildGeralTable():'<div class="empty">Importe a planilha para visualizar.</div>')+'</div>';
+}
+function impRelGeral(input){
+  if(!input.files.length)return;
+  readXlsx(input.files[0],function(rows){
+    relGeralData=rows.filter(function(r){return parseValor(getCol(r,['Ano','ano'])||0)>0;}).map(function(r){
+      return{ano:Math.round(parseValor(getCol(r,['Ano','ano'])||0)),mes:Math.round(parseValor(getCol(r,['Mes','mes'])||0)),
+        vlProc:parseValor(getCol(r,['Valor Processo','valor processo'])||0),
+        compra:parseValor(getCol(r,['Compra Mes','compra mes'])||0),
+        receb:parseValor(getCol(r,['Recebimento Mes','recebimento mes'])||0),
+        total:parseValor(getCol(r,['Total','total'])||0),
+        desp:parseValor(getCol(r,['Despesa','despesa'])||0),
+        pl:parseValor(getCol(r,['Patrimonio','Patrimonio Liquido','patrimonio liquido'])||0)};
+    });
+    var el=document.getElementById('rg-st');if(el)el.textContent=relGeralData.length+' linhas';
+    showToast(relGeralData.length+' linhas!');input.value='';
+    var out=document.getElementById('rg-out');if(out)out.innerHTML=buildGeralTable();
+  });
+}
+var MESES=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function buildGeralTable(){
+  if(!relGeralData||!relGeralData.length)return'<div class="empty">Sem dados.</div>';
+  var lastPL=relGeralData[relGeralData.length-1].pl;
+  var tC=relGeralData.reduce(function(s,r){return s+r.compra;},0);
+  var tR=relGeralData.reduce(function(s,r){return s+r.receb;},0);
+  return'<div class="metrics" style="margin:16px 0">'+
+    '<div class="mc blue"><div class="ml">Total Compras</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
+    '<div class="mc gold"><div class="ml">Total Recebimentos</div><div class="mv gold">'+fmt(tR)+'</div></div>'+
+    '<div class="mc green"><div class="ml">Patrimonio Liquido</div><div class="mv green">'+fmt(lastPL)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Periodo</th><th style="padding:9px;text-align:right">Vl.Processos</th><th style="padding:9px;text-align:right">Compra Mes</th><th style="padding:9px;text-align:right">Recebimento Mes</th><th style="padding:9px;text-align:right">Total Carteira</th><th style="padding:9px;text-align:right">Despesa</th><th style="padding:9px;text-align:right">Patrimonio Liq.</th></tr></thead><tbody>'+
+    relGeralData.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+(MESES[r.mes]||r.mes)+'/'+r.ano+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlProc)+'</td><td style="padding:8px;text-align:right">'+fmt(r.compra)+'</td><td style="padding:8px;text-align:right">'+fmt(r.receb)+'</td><td style="padding:8px;text-align:right">'+fmt(r.total)+'</td><td style="padding:8px;text-align:right">'+fmt(r.desp)+'</td><td style="padding:8px;text-align:right;font-weight:700;color:var(--v)">'+fmt(r.pl)+'</td></tr>';}).join('')+
+    '</tbody></table></div>';
+}
+
+// -- REL PEND --
+var relPendData=null;
+function pageRelPend(){
+  var st=relPendData?relPendData.length+' processos':'Nenhum arquivo';
+  return'<div class="pg-title">Processos Pendentes</div>'+
+    '<div class="card"><label class="imp" for="f-rp"><input type="file" id="f-rp" class="fhide" accept=".xlsx,.xls" onchange="impRelPend(this)"/>'+
+    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl.Cliente / Vl.Compra / Prev.Ganho / Prev.Entrada / Desagio%</div></div>'+
+    '<span class="imp-status" id="rp-st">'+st+'</span></label></div>'+
+    '<div style="display:flex;gap:8px;margin:12px 0"><input id="rp-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1"/>'+
+    '<button class="btn bp" onclick="renderRelPend()">Gerar</button></div>'+
+    '<div id="rp-out"><div class="empty">Importe a planilha e clique em Gerar.</div></div>';
+}
+function impRelPend(input){
+  if(!input.files.length)return;
+  readXlsx(input.files[0],function(rows){
+    relPendData=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
+      var dv=getCol(r,['Data','data']);var ds='';
+      if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
+        vlCli:parseValor(getCol(r,['Valor Cliente','valor cliente'])||0),
+        vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
+        prevG:parseValor(getCol(r,['Prev. Ganho','prev ganho'])||0),
+        prevE:parseValor(getCol(r,['Prev. Entrada','prev entrada'])||0),
+        des:parseValor(getCol(r,['Desagio','Desagio %','desagio'])||0)};
+    });
+    var el=document.getElementById('rp-st');if(el)el.textContent=relPendData.length+' processos';
+    showToast(relPendData.length+' importados!');input.value='';
+  });
+}
+function renderRelPend(){
+  if(!relPendData||!relPendData.length){document.getElementById('rp-out').innerHTML='<div class="empty">Importe primeiro.</div>';return;}
+  var q=(document.getElementById('rp-q').value||'').toLowerCase();
+  var f=relPendData.filter(function(r){return!q||(r.cliente||'').toLowerCase().includes(q)||(r.proc||'').toLowerCase().includes(q);});
+  var tCli=f.reduce(function(s,r){return s+r.vlCli;},0),tC=f.reduce(function(s,r){return s+r.vlComp;},0),tG=f.reduce(function(s,r){return s+r.prevG;},0);
+  document.getElementById('rp-out').innerHTML=
+    '<div class="metrics" style="margin-bottom:16px">'+
+    '<div class="mc"><div class="ml">Pendentes</div><div class="mv">'+f.length+'</div></div>'+
+    '<div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div>'+
+    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
+    '<div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Prev.Entrada</th><th style="padding:9px;text-align:right">Desagio%</th></tr></thead><tbody>'+
+    f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlCli)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right;color:#1D6B3A">'+fmt(r.prevG)+'</td><td style="padding:8px;text-align:right">'+fmt(r.prevE)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
+    '</tbody></table></div>';
+}
+
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -281,6 +551,8 @@ var S={
   mes:new Date().toISOString().slice(0,7),
   dashData:null,
   processos:[],
+  liqManual:[],
+  distribValidacao:[],
   // financeiro: [{id,tipo:'compra'|'venda'|'despesa',data,descricao,valor,banco,processoId,categoria,obs}]
   financeiro:[],
 };
@@ -291,7 +563,9 @@ var relLiqImportData=null;
 
 // ── PERSIST ────────────────────────────────────────────────
 function saveData(){try{localStorage.setItem('pbl_v4',JSON.stringify(S));}catch(e){}showToast('Salvo!');}
-function loadData(){try{var r=localStorage.getItem('pbl_v4');if(r){var d=JSON.parse(r);Object.assign(S,d);if(!S.financeiro)S.financeiro=[];if(!S.processos)S.processos=[];}}catch(e){}}
+function loadData(){
+  if(!S.liqManual)S.liqManual=[];
+  if(!S.distribValidacao)S.distribValidacao=[];try{var r=localStorage.getItem('pbl_v4');if(r){var d=JSON.parse(r);Object.assign(S,d);if(!S.financeiro)S.financeiro=[];if(!S.processos)S.processos=[];}}catch(e){}}
 
 // ── UTILS ──────────────────────────────────────────────────
 function fmt(v){return'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -379,6 +653,11 @@ function buildSidebar(){
       '<div class="sb-section">Relatórios</div>'+
       ni('reliquidados',I.reliq,'Rel. Liquidados')+
       ni('previsao',I.previsao,'Previsão de Entradas')+
+      ni('relliq2',I.reliq,'Proc. Liq. CertJud')+
+      ni('relcomp',I.reliq,'Proc. Comprados')+
+      ni('relgeral',I.reliq,'Rel. Geral CertJud')+
+      ni('relpend',I.reliq,'Proc. Pendentes')+
+      ni('distrib',I.resumo,'Dist. Validações')+
 
       '<div class="sb-section">Sistema</div>'+
       ni('usuarios',I.usuarios,'Usuários');
@@ -417,6 +696,11 @@ function navigate(page){
     case 'previsao':    mc.innerHTML=pagePrevisaoEntradas();break;
     case 'comissao':    mc.innerHTML=pageMinhaComissao();break;
     case 'usuarios':    mc.innerHTML=pageUsuarios();break;
+    case 'relliq2':     mc.innerHTML=pageRelLiq2();break;
+    case 'relcomp':     mc.innerHTML=pageRelComp();break;
+    case 'relgeral':    mc.innerHTML=pageRelGeral();break;
+    case 'relpend':     mc.innerHTML=pageRelPend();break;
+    case 'distrib':     mc.innerHTML=pageDistrib();break;
   }
 }
 
