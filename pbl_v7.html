@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PBL — Gestão de Comissões</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --v:#0D5C52;--vd:#083f38;--vl:#E6F2F0;
+  --d:#B8860B;--dl:#FDF6E3;--dm:#C9970D;
+  --bd:#d0dbd9;--tx:#1c1c1c;--mt:#5e7572;
+  --bg:#f0f3f2;--red:#A32D2D;--redl:#FCEBEB;
+  --sb:240px;
+}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--tx);font-size:14px}
+
+/* ── LOGIN ─────────────────────────────────────── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--v)}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center}
+.login-title{font-size:20px;font-weight:700;color:var(--v)}
+.login-sub{font-size:12px;color:var(--mt);margin-top:2px}
+.lf{margin-bottom:16px}
+.lf label{font-size:12px;color:var(--mt);display:block;margin-bottom:5px;font-weight:600}
+.lf input{width:100%;border:1px solid #ccc;border-radius:8px;padding:10px 13px;font-size:14px;outline:none;transition:border-color .2s}
+.lf input:focus{border-color:var(--v)}
+.login-btn{width:100%;background:var(--v);color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px}
+.login-btn:hover{background:var(--vd)}
+.login-err{background:var(--redl);color:var(--red);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:14px;display:none}
+
+/* ── APP SHELL ──────────────────────────────────── */
+.app-wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ── HEADER ─────────────────────────────────────── */
+.hdr{background:var(--v);display:flex;align-items:stretch;height:56px;flex-shrink:0;z-index:300}
+.hdr-brand{width:var(--sb);flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid rgba(255,255,255,.12)}
+.hdr-title{color:#fff;font-size:14px;font-weight:700;line-height:1.2}
+.hdr-subtitle{color:rgba(255,255,255,.5);font-size:10px;display:block}
+.hdr-right{flex:1;display:flex;align-items:center;gap:10px;padding:0 20px}
+.hdr-period{color:rgba(255,255,255,.7);font-size:12px;flex:1}
+.hdr-user{color:rgba(255,255,255,.85);font-size:12px;background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px}
+input[type=month]{padding:5px 9px;border-radius:6px;border:none;font-size:12px;background:rgba(255,255,255,.18);color:#fff;outline:none;cursor:pointer}
+input[type=month]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.7}
+.btn-calc{background:var(--d);color:#fff;border:none;padding:7px 18px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer}
+.btn-calc:hover{background:var(--dm)}
+.btn-logout{background:rgba(255,255,255,.15);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+.btn-logout:hover{background:rgba(255,255,255,.25)}
+.admin-badge{background:var(--d);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px}
+
+/* ── BODY ───────────────────────────────────────── */
+.body-area{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ────────────────────────────────────── */
+.sidebar{width:var(--sb);background:#fff;border-right:1px solid var(--bd);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sb-section{padding:16px 12px 4px;font-size:10px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.08em}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;border-radius:7px;margin:1px 8px;font-size:13px;color:var(--tx);border:none;background:none;width:calc(100% - 16px);text-align:left;transition:background .12s,color .12s;white-space:nowrap}
+.nav-item:hover{background:var(--vl);color:var(--v)}
+.nav-item.active{background:var(--vl);color:var(--v);font-weight:700}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.55}
+.nav-item.active svg,.nav-item:hover svg{opacity:1}
+
+/* accordion */
+.sb-group{}
+.sb-group-hdr{display:flex;align-items:center;gap:9px;padding:8px 14px 8px 22px;cursor:pointer;font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.05em;border:none;background:none;width:100%;text-align:left}
+.sb-group-hdr:hover{color:var(--v)}
+.sb-group-hdr svg{width:14px;height:14px;opacity:.55}
+.sb-chevron{margin-left:auto;font-size:10px;transition:transform .2s;line-height:1}
+.sb-children{display:none;padding-bottom:4px}
+.sb-children.open{display:block}
+.sb-children .nav-item{padding-left:36px;font-size:12px;margin-left:12px;width:calc(100% - 20px)}
+
+/* ── MAIN ───────────────────────────────────────── */
+.main{flex:1;overflow-y:auto;padding:24px 28px;min-width:0}
+
+/* ── CARDS / FORM ───────────────────────────────── */
+.page-title{font-size:17px;font-weight:700;color:var(--v);display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.page-title svg{width:20px;height:20px;flex-shrink:0}
+.st{font-size:11px;font-weight:700;color:var(--mt);text-transform:uppercase;letter-spacing:.08em;margin:22px 0 10px}
+.st:first-child{margin-top:0}
+.card{background:#fff;border:.5px solid var(--bd);border-radius:10px;padding:16px 20px;margin-bottom:14px}
+.frow{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.fg{display:flex;flex-direction:column;gap:4px;flex:1;min-width:110px}
+.fg label{font-size:12px;color:var(--mt)}
+.fg input,.fg select,.fg textarea{border:.5px solid #ccc;border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);background:#fff;outline:none;width:100%;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--v)}
+.fg textarea{resize:vertical;min-height:70px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.div{height:.5px;background:#eef1f0;margin:14px 0}
+
+/* ── BUTTONS ────────────────────────────────────── */
+.btn{padding:7px 15px;border-radius:6px;font-size:13px;border:.5px solid #ccc;background:#fff;cursor:pointer;color:var(--tx);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--vl)}
+.bp{background:var(--v);color:#fff;border-color:var(--v)}
+.bp:hover{background:var(--vd)}
+.bd2{color:var(--red);border-color:#e8b4b4;padding:4px 10px;font-size:11px}
+.bd2:hover{background:var(--redl)}
+.bsm{padding:4px 12px;font-size:12px}
+.print-btn{background:#1D6B3A;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;margin-left:auto}
+.print-btn:hover{background:#145229}
+
+/* ── TABLE ──────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--v);color:#fff;font-size:11px;font-weight:700;padding:8px 11px;text-align:left;white-space:nowrap}
+.tbl th.r{text-align:right}
+.tbl td{padding:7px 11px;border-bottom:.5px solid #eef1f0;vertical-align:middle}
+.tbl td.r{text-align:right}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:nth-child(even) td{background:#f7faf9}
+.tbl tr:hover td{background:#edf5f3}
+.tbl tr.foot td{background:var(--v);color:#fff;font-weight:700}
+.dbtn{color:var(--red);background:none;border:none;cursor:pointer;font-size:16px;padding:0 3px;line-height:1}
+.ebtn{color:var(--v);background:none;border:none;cursor:pointer;font-size:14px;padding:0 3px;line-height:1}
+
+/* ── BADGES ─────────────────────────────────────── */
+.badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.b-tot{background:var(--vl);color:var(--v)}
+.b-par{background:var(--dl);color:var(--d)}
+.b-pend{background:#EEF3FB;color:#185FA5}
+.b-red{background:var(--redl);color:var(--red)}
+.b-green{background:#E6F4EC;color:#1D6B3A}
+.b-compra{background:#EEF3FB;color:#185FA5}
+.b-venda{background:#E6F4EC;color:#1D6B3A}
+.b-desp{background:var(--redl);color:var(--red)}
+.section-badge{background:var(--v);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;margin-left:10px;vertical-align:middle}
+
+/* ── METRICS ────────────────────────────────────── */
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.mc{background:var(--vl);border-radius:8px;padding:13px 15px}
+.mc.gold{background:var(--dl)}
+.mc.blue{background:#EEF3FB}
+.mc.red{background:var(--redl)}
+.mc.green{background:#E6F4EC}
+.ml{font-size:11px;color:var(--mt);margin-bottom:4px}
+.mv{font-size:20px;font-weight:700;color:var(--v)}
+.mv.gold{color:var(--d)}
+.mv.blue{color:#185FA5}
+.mv.red{color:var(--red)}
+.mv.green{color:#1D6B3A}
+
+/* ── CHARTS ─────────────────────────────────────── */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.chart-card{background:#fff;border:.5px solid var(--bd);border-radius:10px;padding:18px 20px}
+.chart-title{font-size:13px;font-weight:700;color:var(--v);margin-bottom:4px}
+.chart-sub{font-size:11px;color:var(--mt);margin-bottom:14px}
+.chart-wrap{position:relative;height:260px}
+.chart-full{grid-column:1/-1}
+.chart-wrap-tall{position:relative;height:300px}
+
+/* ── MODAL ──────────────────────────────────────── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;position:relative}
+.modal-title{font-size:16px;font-weight:700;color:var(--v);margin-bottom:20px}
+.modal-close{position:absolute;top:16px;right:20px;background:none;border:none;font-size:22px;cursor:pointer;color:var(--mt)}
+.modal-close:hover{color:var(--red)}
+
+/* ── RANK ───────────────────────────────────────── */
+.rank-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:.5px solid #eef1f0;font-size:12px}
+.rank-row:last-child{border-bottom:none}
+.rank-n{width:20px;font-size:11px;font-weight:700;color:var(--mt);text-align:center}
+.rank-name{flex:1;font-weight:500}
+.rank-bar-bg{width:120px;height:8px;background:#eef1f0;border-radius:4px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:4px}
+.rank-val{width:90px;text-align:right;font-size:11px}
+.rank-pct{width:38px;text-align:right;font-size:11px;color:var(--mt)}
+
+/* ── MISC ───────────────────────────────────────── */
+.av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.ln{flex:1;font-size:13px;font-weight:500}
+.lrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid #eef1f0}
+.lrow:last-child{border-bottom:none}
+.empty{font-size:13px;color:var(--mt);padding:12px 0;text-align:center}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--v);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.filter-bar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;padding:14px 16px;background:#fff;border:.5px solid var(--bd);border-radius:10px}
+.search-input{border:.5px solid #ccc;border-radius:6px;padding:7px 10px;font-size:13px;outline:none;flex:1;min-width:160px}
+.search-input:focus{border-color:var(--v)}
+.imp{display:flex;align-items:center;gap:12px;background:var(--dl);border:1.5px dashed var(--d);border-radius:8px;padding:12px 16px;margin-bottom:14px;cursor:pointer}
+.imp:hover{background:#faeec4}
+.imp-icon{width:34px;height:34px;background:var(--d);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.imp-icon svg{width:18px;height:18px;fill:#fff}
+.imp-text{flex:1}
+.imp-title{font-size:13px;font-weight:700;color:var(--d)}
+.imp-sub{font-size:11px;color:var(--mt);margin-top:2px}
+.imp-status{font-size:11px;font-weight:700;color:var(--v);background:var(--vl);padding:3px 10px;border-radius:10px;white-space:nowrap;flex-shrink:0}
+input.fhide{display:none}
+
+/* fluxo caixa */
+.fc-in{color:#1D6B3A;font-weight:700}
+.fc-out{color:var(--red);font-weight:700}
+.fc-saldo-pos{background:#E6F4EC;color:#1D6B3A;padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px}
+.fc-saldo-neg{background:var(--redl);color:var(--red);padding:2px 8px;border-radius:6px;font-weight:700;font-size:12px}
+
+/* ── PRINT ──────────────────────────────────────── */
+@media print{
+  .hdr,.sidebar,.no-print,.modal-close,.dbtn,.ebtn,.print-btn,.filter-bar,.btn,.imp{display:none!important}
+  .body-area{display:block}
+  .main{padding:0;overflow:visible}
+  body{background:#fff}
+  .card{border:1px solid #ccc;border-radius:0}
+  .tbl th{background:#0D5C52!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:768px){
+  :root{--sb:200px}
+  .metrics,.g4{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr}
+  .charts-grid{grid-template-columns:1fr}
+  .chart-full{grid-column:auto}
+  .main{padding:16px}
+}
+
+/* EMPRESA BADGES */
+.b-pbl{background:#E6F2F0;color:#0D5C52}
+.b-fidc{background:#EEF3FB;color:#185FA5}
+.b-entrada{background:#E6F4EC;color:#1D6B3A}
+.b-saida{background:#FCEBEB;color:#A32D2D}
+.emp-pbl{background:#0D5C52;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+.emp-fidc{background:#185FA5;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px}
+/* CALCULADORA DESAGIO */
+.calc-desagio{background:#FDF6E3;border:.5px solid var(--d);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--d);font-weight:600;margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg width="44" height="38" viewBox="0 0 120 100"><g fill="#B8860B"><path d="M18 58C10 50 10 38 20 32L42 20C48 17 54 20 54 28L54 38L38 30C34 28 30 30 30 35L30 50Z"/><path d="M102 58C110 50 110 38 100 32L78 20C72 17 66 20 66 28L66 38L82 30C86 28 90 30 90 35L90 50Z"/><path d="M30 50L54 38L66 38L90 50L80 65C74 72 62 75 60 75C58 75 46 72 40 65Z"/></g></svg>
+      <div><div class="login-title">PBL</div><div class="login-sub">Gestão de Comissões</div></div>
+    </div>
+    <div class="login-err" id="login-err">Usuário ou senha incorretos.</div>
+    <div class="lf"><label>Usuário</label><input type="text" id="inp-user" placeholder="usuario" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="lf"><label>Senha</label><input type="password" id="inp-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="app-wrap" style="display:none">
+  <div class="hdr">
+    <div class="hdr-brand">
+      <svg width="36" height="30" viewBox="0 0 120 100"><g fill="#B8860B"><path d="M18 58C10 50 10 38 20 32L42 20C48 17 54 20 54 28L54 38L38 30C34 28 30 30 30 35L30 50Z"/><path d="M102 58C110 50 110 38 100 32L78 20C72 17 66 20 66 28L66 38L82 30C86 28 90 30 90 35L90 50Z"/><path d="M30 50L54 38L66 38L90 50L80 65C74 72 62 75 60 75C58 75 46 72 40 65Z"/></g></svg>
+      <div><div class="hdr-title">PBL<span class="hdr-subtitle">Gestão de Comissões</span></div></div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-period" id="period-lbl"></span>
+      <input type="month" id="mes-ref" oninput="updPeriod();saveData()"/>
+      <button class="btn-calc" id="btn-calc-main" onclick="recalc()" style="display:none">⚡ Calcular</button>
+      <span class="hdr-user" id="hdr-user"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+  <div class="body-area">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main" id="main-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="modal-root"></div>
+
+
+<script>
+
+// ════════════════════════════════════════════════════════════
+// USERS
+// ════════════════════════════════════════════════════════════
+var USERS=[
+  {id:'admin',    username:'admin',     password:'pbl@2026',    role:'admin',  name:'Administrador', lawyerId:null},
+  {id:'jessica',  username:'jessica',   password:'jessica123',  role:'lawyer', name:'Jessica',       lawyerId:'jessica'},
+  {id:'bruno',    username:'bruno',     password:'bruno123',    role:'lawyer', name:'Bruno',         lawyerId:'bruno'},
+  {id:'evelly',   username:'evelly',    password:'evelly123',   role:'lawyer', name:'Evelly',        lawyerId:'evelly'},
+  {id:'luciano',  username:'luciano',   password:'luciano123',  role:'lawyer', name:'Luciano',       lawyerId:'luciano'},
+  {id:'karen',    username:'karen',     password:'karen123',    role:'lawyer', name:'Karen',         lawyerId:'karen'},
+  {id:'joao',     username:'joao',      password:'joao123',     role:'lawyer', name:'João',          lawyerId:'joao'},
+  {id:'caio',     username:'caio',      password:'caio123',     role:'lawyer', name:'Caio',          lawyerId:'caio'},
+  {id:'guilherme',username:'guilherme', password:'guilherme123',role:'lawyer', name:'Guilherme',     lawyerId:'guilherme'},
+  {id:'richard',  username:'richard',   password:'richard123',  role:'lawyer', name:'Richard',       lawyerId:'richard'},
+  {id:'otavio',   username:'otavio',    password:'otavio123',   role:'lawyer', name:'Otávio',        lawyerId:'otavio'},
+];
+var AVC=[{bg:'#E6F2F0',c:'#0D5C52'},{bg:'#FDF6E3',c:'#7a5800'},{bg:'#EEF3FB',c:'#185FA5'},{bg:'#FCEBEB',c:'#A32D2D'},{bg:'#F0EFF9',c:'#534AB7'},{bg:'#E6F4EC',c:'#1D6B3A'},{bg:'#FFF0F3',c:'#993556'},{bg:'#F4F0FF',c:'#3C3489'}];
+var PC=['#0D5C52','#B8860B','#2E6DB4','#A32D2D','#534AB7','#1D6B3A','#993556','#3C3489','#854F0B','#185FA5'];
+
+// ── STATE ──────────────────────────────────────────────────
+var S={
+  lawyers:[],
+  campanhas:[],
+  processos:[],          // globais
+  // dados por mês: meses['2026-03'] = {entries, dashData, financeiro, relLiqData}
+  meses:{},
+  mes:new Date().toISOString().slice(0,7),
+};
+// Dados do mês ativo (referência ao S.meses[S.mes])
+function getMes(){
+  if(!S.meses[S.mes])S.meses[S.mes]={entries:{},dashData:null,financeiro:[],relLiqData:[]};
+  return S.meses[S.mes];
+}
+var currentUser=null;
+var charts={};
+var currentPage='dashboard';
+
+// ── PERSIST ────────────────────────────────────────────────
+function saveData(){
+  try{localStorage.setItem('pbl_v7',JSON.stringify(S));}catch(e){}
+  showToast('Salvo!');
+}
+function loadData(){
+  try{
+    var r=localStorage.getItem('pbl_v7');
+    if(r){var d=JSON.parse(r);Object.assign(S,d);if(!S.meses)S.meses={};if(!S.processos)S.processos=[];if(!S.campanhas)S.campanhas=[];}
+    // Migração do formato antigo
+    var old=localStorage.getItem('pbl_v4');
+    if(old&&!r){
+      try{
+        var od=JSON.parse(old);
+        if(od.lawyers&&od.lawyers.length)S.lawyers=od.lawyers;
+        if(od.campanhas&&od.campanhas.length)S.campanhas=od.campanhas;
+        if(od.processos&&od.processos.length)S.processos=od.processos;
+        if(od.mes)S.mes=od.mes;
+        if(od.entries&&Object.keys(od.entries).length){getMes().entries=od.entries;}
+        if(od.financeiro&&od.financeiro.length){getMes().financeiro=od.financeiro;}
+        if(od.dashData&&od.dashData.length){getMes().dashData=od.dashData;}
+        saveData();
+      }catch(ex){}
+    }
+  }catch(e){}
+}
+
+// ── UTILS ──────────────────────────────────────────────────
+function fmt(v){return'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtK(v){if(v>=1000000)return'R$ '+(v/1000000).toFixed(1)+'M';if(v>=1000)return'R$ '+(v/1000).toFixed(0)+'k';return fmt(v);}
+function ini(n){return(n||'?').trim().split(' ').slice(0,2).map(function(x){return x[0].toUpperCase();}).join('');}
+function avSt(i){var c=AVC[i%AVC.length];return'background:'+c.bg+';color:'+c.c+';';}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1600);}
+function normAdv(s){return String(s||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function fmtDate(d){if(!d)return'—';var dt=new Date(d+'T00:00:00');if(isNaN(dt))return d;return dt.toLocaleDateString('pt-BR');}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function closeModal(){document.getElementById('modal-root').innerHTML='';}
+function showModal(html){document.getElementById('modal-root').innerHTML='<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">'+html+'</div></div>';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── XLSX HELPER ROBUSTO ────────────────────────────────────
+// Lê coluna de xlsx procurando por substring normalizada no nome da coluna
+function xlsxGet(row,keys,subs,isNum){
+  var v=isNum?0:'';
+  for(var i=0;i<keys.length;i++){
+    var k=keys[i];
+    var kn=k.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    for(var j=0;j<subs.length;j++){
+      if(kn.indexOf(subs[j])>=0){
+        if(isNum){var n=parseFloat(String(row[k]).replace(',','.'));if(!isNaN(n)&&n!==0){v=n;break;}}
+        else{var sv=String(row[k]||'').trim();if(sv){v=sv;break;}}
+      }
+    }
+    if(v!==''&&v!==0)break;
+  }
+  return v;
+}
+function parseDataBR(s){
+  if(!s)return'';
+  var st=String(s).trim();
+  var parts=st.split('/');
+  if(parts.length===3&&parts[2].length===4)return parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+  try{var d=new Date(st);if(!isNaN(d))return d.toISOString().slice(0,10);}catch(e){}
+  return '';
+}
+// Distribui dados importados para entries dos advogados
+function distribuirEntries(byAdv){
+  var matched=0;
+  S.lawyers.forEach(function(l){
+    var key=normAdv(l.name);
+    var fn=key.split(' ')[0];
+    // busca: exata, por primeiro nome, ou advogado da planilha começa com primeiro nome do sistema
+    var foundKey=null;
+    var keys2=Object.keys(byAdv);
+    for(var i=0;i<keys2.length;i++){
+      var k=keys2[i];
+      var kfn=k.split(' ')[0];
+      if(k===key||kfn===fn||k.startsWith(fn)||fn.startsWith(kfn)){foundKey=k;break;}
+    }
+    if(foundKey){
+      var m=getMes();
+      if(!m.entries[l.id])m.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+      m.entries[l.id].processos=byAdv[foundKey];
+      m.entries[l.id].volLiquidado=byAdv[foundKey].reduce(function(s,p){return s+p.valor;},0);
+      matched++;
+    }
+  });
+  return matched;
+}
+// Lança entradas no financeiro automaticamente para processos liquidados importados
+function lancarEntradasFinanceiro(relData){
+  var m=getMes();
+  if(!m.financeiro)m.financeiro=[];
+  var novos=0;
+  relData.forEach(function(r){
+    if(!r.val||r.val<=0)return;
+    // Verifica se já existe lançamento para este processo/adv/valor no mês
+    var jaExiste=m.financeiro.some(function(f){
+      return f.origem==='importacao'&&f.proc===r.proc&&Math.abs(f.valor-r.val)<0.01;
+    });
+    if(!jaExiste){
+      var empresa=r.empresa||'PBL';
+      m.financeiro.push({
+        id:uid(),
+        empresa:empresa,
+        tipo:'entrada',
+        subtipo:r.tipo==='Parcial'?'liquidacao_parcial':'liquidacao_total',
+        data:r.data||todayStr(),
+        valor:r.val,
+        banco:'',
+        descricao:'Liquidação '+(r.tipo||'Total')+' — '+r.advNome,
+        processoId:'',
+        proc:r.proc,
+        advogado:r.adv,
+        categoria:'Liquidação',
+        obs:'Importado automaticamente',
+        origem:'importacao'
+      });
+      novos++;
+    }
+  });
+  return novos;
+}
+
+// ── LOGIN ──────────────────────────────────────────────────
+function doLogin(){
+  var u=document.getElementById('inp-user').value.trim().toLowerCase();
+  var p=document.getElementById('inp-pass').value;
+  var user=USERS.find(function(x){return x.username===u&&x.password===p;});
+  if(!user){document.getElementById('login-err').style.display='block';return;}
+  currentUser=user;
+  document.getElementById('login-err').style.display='none';
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  loadData();initApp();
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('app-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('inp-user').value='';
+  document.getElementById('inp-pass').value='';
+}
+
+// ── INIT / NAV ─────────────────────────────────────────────
+var I={
+  dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>',
+  processos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+  financeiro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  fluxo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  operacional:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>',
+  campanhas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  advogados:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  resumo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  relLiq:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>',
+  previsao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  comissao:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+  usuarios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+};
+function ni(page,icon,label){return'<li class="nav-item" id="nav-'+page+'" onclick="navigate(\''+page+'\')">'+icon+'<span>'+label+'</span></li>';}
+function buildSidebar(){
+  var admin=currentUser.role==='admin';
+  var html='';
+  if(admin){
+    html='<div class="nav-section">PRINCIPAL</div>'+
+    ni('dashboard',I.dashboard,'Dashboard')+
+    ni('processos',I.processos,'Processos')+
+    '<div class="nav-section">LANÇAMENTOS</div>'+
+    '<li class="nav-item nav-group" onclick="toggleGroup(\'grp-lanc\')">'+I.financeiro+'<span>Lançamentos</span><svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></li>'+
+    '<ul class="nav-sub" id="grp-lanc">'+
+    ni('financeiro',I.financeiro,'Financeiro')+
+    ni('fluxo',I.fluxo,'Fluxo de Caixa')+
+    ni('operacional',I.operacional,'Operacional / Prod.')+
+    ni('campanhas',I.campanhas,'Campanhas')+
+    ni('advogados',I.advogados,'Comissões por Adv.')+
+    ni('resumo',I.resumo,'Resumo Consolidado')+
+    '</ul>'+
+    '<div class="nav-section">RELATÓRIOS</div>'+
+    ni('relLiq',I.relLiq,'Rel. Liquidados')+
+    ni('previsao',I.previsao,'Previsão de Entradas')+
+    '<div class="nav-section">SISTEMA</div>'+
+    ni('usuarios',I.usuarios,'Usuários');
+  }else{
+    html=ni('comissao',I.comissao,'Minha Comissão')+ni('processos',I.processos,'Processos');
+  }
+  document.getElementById('sidebar-nav').innerHTML=html;
+}
+function toggleGroup(id){var el=document.getElementById(id);if(el)el.classList.toggle('open');}
+function navigate(page){
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
+  var el=document.getElementById('nav-'+page);if(el)el.classList.add('active');
+  var mc=document.getElementById('main-content');
+  switch(page){
+    case'dashboard':   mc.innerHTML=pageDashboard();afterDash();break;
+    case'processos':   mc.innerHTML=pageProcessos();break;
+    case'financeiro':  mc.innerHTML=pageFinanceiro();break;
+    case'fluxo':       mc.innerHTML=pageFluxoCaixa();break;
+    case'operacional': mc.innerHTML=pageOperacional();break;
+    case'campanhas':   mc.innerHTML=pageCampanhas();break;
+    case'advogados':   mc.innerHTML=pageAdvogados();break;
+    case'resumo':      mc.innerHTML=pageResumo();break;
+    case'relLiq':      mc.innerHTML=pageRelLiquidados();break;
+    case'previsao':    mc.innerHTML=pagePrevisaoEntradas();break;
+    case'comissao':    mc.innerHTML=pageMinhaComissao();break;
+    case'usuarios':    mc.innerHTML=pageUsuarios();break;
+  }
+}
+function updPeriod(){
+  var m=document.getElementById('mes-ref').value;if(!m)return;
+  var changed=(m!==S.mes);
+  S.mes=m;
+  var d=new Date(m+'-02');
+  document.getElementById('period-lbl').textContent=d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  if(changed){saveData();navigate(currentPage);}
+}
+function initApp(){
+  document.getElementById('mes-ref').value=S.mes;
+  updPeriod();
+  var badge=currentUser.role==='admin'?'<span class="admin-badge">Admin</span>':'';
+  document.getElementById('hdr-user').innerHTML=esc(currentUser.name)+badge;
+  document.getElementById('btn-calc-main').style.display=currentUser.role==='admin'?'':'none';
+  buildSidebar();
+  navigate('dashboard');
+}
+function recalc(){updPeriod();saveData();navigate('resumo');}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+function pageDashboard(){
+  var m=getMes();
+  var st=m.dashData&&m.dashData.length?m.dashData.length+' proc':'Nenhum arquivo';
+  var adminBlock=currentUser.role==='admin'?
+    '<div class="st">Importar planilha de liquidados</div>'+
+    '<label class="imp" for="file-dash">'+
+      '<input type="file" id="file-dash" class="fhide" accept=".xlsx,.xls" onchange="importDashboard(this)"/>'+
+      '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+      '<div class="imp-text"><div class="imp-title">Importar Liquidados (.xlsx)</div><div class="imp-sub">Colunas: ADVOGADO · PROCESSOS · VALOR · LIQUIDAÇÃO · DATA · TITULARIDADE</div></div>'+
+      '<span class="imp-status" id="dash-status">'+st+'</span>'+
+    '</label>':'';
+  return adminBlock+
+    '<div class="metrics">'+
+      '<div class="mc"><div class="ml">Total liquidado</div><div class="mv" id="kpi-total">—</div><div id="kpi-proc" style="font-size:11px;color:var(--mt)">— processos</div></div>'+
+      '<div class="mc gold"><div class="ml">Liquidação total</div><div class="mv gold" id="kpi-tot-v">—</div><div id="kpi-tot-q" style="font-size:11px;color:var(--mt)">—</div></div>'+
+      '<div class="mc"><div class="ml">Liquidação parcial</div><div class="mv" id="kpi-par-v">—</div><div id="kpi-par-q" style="font-size:11px;color:var(--mt)">—</div></div>'+
+      '<div class="mc blue"><div class="ml">PBL</div><div class="mv blue" id="kpi-pbl">—</div></div>'+
+      '<div class="mc blue"><div class="ml">FIDC</div><div class="mv" id="kpi-fidc">—</div></div>'+
+    '</div>'+
+    '<div class="charts-grid">'+
+      '<div class="chart-card"><div class="chart-title">Volume: total vs parcial</div><div class="chart-sub">Valor em R$</div><div class="chart-wrap"><canvas id="chart-tipo-val"></canvas></div></div>'+
+      '<div class="chart-card"><div class="chart-title">Processos por tipo</div><div class="chart-sub">Quantidade</div><div class="chart-wrap"><canvas id="chart-tipo-qtd"></canvas></div></div>'+
+    '</div>'+
+    '<div class="charts-grid">'+
+      '<div class="chart-card chart-full"><div class="chart-title">Volume liquidado por advogado</div><div class="chart-sub">Total vs Parcial em R$</div><div class="chart-wrap-tall"><canvas id="chart-adv-bar"></canvas></div></div>'+
+    '</div>'+
+    '<div class="charts-grid">'+
+      '<div class="chart-card"><div class="chart-title">Participação % Total</div><div class="chart-sub">Por advogado</div><div class="chart-wrap"><canvas id="chart-pie-tot"></canvas></div></div>'+
+      '<div class="chart-card"><div class="chart-title">Participação % Parcial</div><div class="chart-sub">Por advogado</div><div class="chart-wrap"><canvas id="chart-pie-par"></canvas></div></div>'+
+    '</div>'+
+    '<div class="card" id="dash-ranking"><div class="empty">Importe planilha de liquidados para ver o ranking.</div></div>';
+}
+function afterDash(){
+  updPeriod();
+  var m=getMes();
+  var d=m.dashData;
+  if(!d||!d.length){d=buildDashData();}
+  if(d&&d.length)renderDashCharts(d);
+}
+function buildDashData(){
+  var data=[];
+  S.processos.forEach(function(p){
+    if(p.status==='pendente')return;
+    var rec=(p.recebimentos||[]).reduce(function(s,r){return s+(r.valor||0);},0);
+    var advN=(S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:p.advogadoId||'?'}).name;
+    data.push({adv:normAdv(advN),val:rec,tipo:p.status==='liquidado_parcial'?'Parcial':'Total',empresa:p.empresa||'PBL'});
+  });
+  return data;
+}
+
+// ══ IMPORTAÇÃO DASHBOARD ════════════════════════════════════
+function importDashboard(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){showToast('Arquivo vazio!');input.value='';return;}
+      var keys=Object.keys(rows[0]);
+      var data=[],byAdv={},relData=[];
+      rows.forEach(function(r){
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false));
+        var val=xlsxGet(r,keys,['VALOR'],true);
+        var liq=xlsxGet(r,keys,['LIQUID','LIQUIDAC'],false);
+        var proc=xlsxGet(r,keys,['PROCESSO'],false);
+        var datRaw=xlsxGet(r,keys,['DATA'],false);
+        var tit=xlsxGet(r,keys,['TITULARIDADE','TITULAR'],false).toUpperCase();
+        var empresa=tit.includes('FIDC')?'FIDC':'PBL';
+        var dat=parseDataBR(datRaw);
+        if(!adv||adv==='ADVOGADO')return;
+        var tipo=liq.toUpperCase().indexOf('PARCIAL')>=0?'Parcial':'Total';
+        data.push({adv:adv,val:val,tipo:tipo,empresa:empresa});
+        relData.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:proc,val:val,tipo:tipo,data:dat,empresa:empresa});
+        if(!byAdv[adv])byAdv[adv]=[];
+        byAdv[adv].push({ref:proc,valor:val,tipo:tipo});
+      });
+      if(!data.length){showToast('Nenhum dado encontrado. Verifique as colunas ADVOGADO e VALOR.');input.value='';return;}
+      var m=getMes();
+      m.dashData=data;
+      m.relLiqData=relData;
+      var matched=distribuirEntries(byAdv);
+      var novosLanc=lancarEntradasFinanceiro(relData);
+      var el=document.getElementById('dash-status');
+      if(el)el.textContent=data.length+' proc · '+matched+' adv';
+      saveData();
+      renderDashCharts(data);
+      showToast(data.length+' processos carregados! '+novosLanc+' entradas lançadas no financeiro.');
+    }catch(err){showToast('Erro ao ler arquivo: '+err.message);console.error(err);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+function renderDashCharts(data){
+  if(!data||!data.length)return;
+  var total=data.reduce(function(s,r){return s+r.val;},0);
+  var totArr=data.filter(function(r){return r.tipo==='Total';});
+  var parArr=data.filter(function(r){return r.tipo==='Parcial';});
+  var valTot=totArr.reduce(function(s,r){return s+r.val;},0);
+  var valPar=parArr.reduce(function(s,r){return s+r.val;},0);
+  var pblV=data.filter(function(r){return(r.empresa||'PBL')==='PBL';}).reduce(function(s,r){return s+r.val;},0);
+  var fidcV=data.filter(function(r){return r.empresa==='FIDC';}).reduce(function(s,r){return s+r.val;},0);
+  function set(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  set('kpi-total',fmt(total));set('kpi-proc',data.length+' processos');
+  set('kpi-tot-v',fmt(valTot));set('kpi-tot-q',totArr.length+' processos');
+  set('kpi-par-v',fmt(valPar));set('kpi-par-q',parArr.length+' processos');
+  set('kpi-pbl',fmt(pblV));set('kpi-fidc',fmt(fidcV));
+  var advMap={};
+  data.forEach(function(r){if(!advMap[r.adv])advMap[r.adv]={tot:0,par:0,qtdT:0,qtdP:0};if(r.tipo==='Total'){advMap[r.adv].tot+=r.val;advMap[r.adv].qtdT++;}else{advMap[r.adv].par+=r.val;advMap[r.adv].qtdP++;}});
+  var advArr=Object.keys(advMap).map(function(k){return{name:k,tot:advMap[k].tot,par:advMap[k].par,qtdT:advMap[k].qtdT,qtdP:advMap[k].qtdP,total:advMap[k].tot+advMap[k].par};}).sort(function(a,b){return b.total-a.total;});
+  var labels=advArr.map(function(x){return x.name.charAt(0)+x.name.slice(1).toLowerCase();});
+  function mk(id,type,d2,opts){var el=document.getElementById(id);if(!el)return;if(charts[id]){charts[id].destroy();delete charts[id];}charts[id]=new Chart(el,{type:type,data:d2,options:opts});}
+  var pieOpts=function(fn){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},padding:8,boxWidth:10}},tooltip:{callbacks:{label:fn}}}};};
+  mk('chart-tipo-val','doughnut',{labels:['Total','Parcial'],datasets:[{data:[valTot,valPar],backgroundColor:['#0D5C52','#B8860B'],borderWidth:2,borderColor:'#fff'}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return' '+fmt(c.parsed)+' ('+(total>0?(c.parsed/total*100).toFixed(1):0)+'%)';}}}}}); 
+  mk('chart-tipo-qtd','doughnut',{labels:['Total','Parcial'],datasets:[{data:[totArr.length,parArr.length],backgroundColor:['#0D5C52','#B8860B'],borderWidth:2,borderColor:'#fff'}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:function(c){return' '+c.parsed+' proc';}}}}}); 
+  mk('chart-adv-bar','bar',{labels:labels,datasets:[{label:'Liq. Total',data:advArr.map(function(x){return x.tot;}),backgroundColor:'#0D5C52',borderRadius:3},{label:'Liq. Parcial',data:advArr.map(function(x){return x.par;}),backgroundColor:'#B8860B',borderRadius:3}]},{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'},tooltip:{callbacks:{label:function(c){return' '+c.dataset.label+': '+fmt(c.parsed.y);}}}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:function(v){return fmtK(v);}},grid:{color:'#eef1f0'}}}});
+  var parAdvArr=advArr.filter(function(x){return x.par>0;});
+  mk('chart-pie-tot','doughnut',{labels:labels,datasets:[{data:advArr.map(function(x){return x.tot;}),backgroundColor:PC.slice(0,advArr.length),borderWidth:2,borderColor:'#fff'}]},pieOpts(function(c){return' '+fmt(c.parsed)+' ('+(valTot>0?(c.parsed/valTot*100).toFixed(1):0)+'%)';}));
+  mk('chart-pie-par','doughnut',{labels:parAdvArr.map(function(x){return x.name.charAt(0)+x.name.slice(1).toLowerCase();}),datasets:[{data:parAdvArr.map(function(x){return x.par;}),backgroundColor:PC.slice(0,parAdvArr.length),borderWidth:2,borderColor:'#fff'}]},pieOpts(function(c){return' '+fmt(c.parsed)+' ('+(valPar>0?(c.parsed/valPar*100).toFixed(1):0)+'%)';}));
+  var maxV=advArr[0]?advArr[0].total:1;
+  var rrows=advArr.map(function(x,i){
+    var pct=(total>0?x.total/total*100:0).toFixed(1);
+    return'<div class="rank-row"><div class="rank-n">'+(i+1)+'</div>'+
+    '<div class="rank-name">'+x.name.charAt(0)+x.name.slice(1).toLowerCase()+
+    ' <span class="badge b-tot">'+x.qtdT+'T</span><span class="badge b-par" style="margin-left:3px">'+x.qtdP+'P</span></div>'+
+    '<div class="rank-bar-bg"><div class="rank-bar-fill" style="width:'+(x.total/maxV*100).toFixed(0)+'%;background:'+PC[i%PC.length]+'"></div></div>'+
+    '<div class="rank-val">'+fmt(x.total)+'</div><div class="rank-pct">'+pct+'%</div>'+
+    '<div class="rank-val" style="color:#0D5C52">'+fmt(x.tot)+'</div>'+
+    '<div class="rank-val" style="color:#B8860B">'+fmt(x.par)+'</div></div>';
+  }).join('');
+  var el=document.getElementById('dash-ranking');
+  if(el)el.innerHTML=rrows?'<div class="rank-row" style="font-size:10px;font-weight:700;color:var(--mt);border-bottom:1.5px solid var(--v);padding-bottom:6px"><div style="width:20px"></div><div style="flex:1">Advogado</div><div style="width:120px"></div><div style="width:90px;text-align:right">Total</div><div style="width:38px;text-align:right">%</div><div style="width:90px;text-align:right;color:#0D5C52">Liq. Total</div><div style="width:90px;text-align:right;color:#B8860B">Liq. Parcial</div></div>'+rrows:'<div class="empty">Sem dados</div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// PROCESSOS — cadastro, CRUD, recebimentos
+// ════════════════════════════════════════════════════════════
+function pageProcessos(){
+  var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  var rows=S.processos.map(function(p,i){
+    var adv=(S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:p.advogadoId||'—'}).name;
+    var rec=(p.recebimentos||[]).reduce(function(s,r){return s+(r.valor||0);},0);
+    var sb=p.status==='liquidado_total'?'<span class="badge b-tot">Total</span>':p.status==='liquidado_parcial'?'<span class="badge b-par">Parcial</span>':'<span class="badge b-pend">Pendente</span>';
+    var emp=p.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    return'<tr>'+
+      '<td>'+emp+'</td>'+
+      '<td style="font-size:11px">'+esc(p.numero)+'</td>'+
+      '<td>'+esc(p.cliente)+'</td>'+
+      '<td>'+esc(adv)+'</td>'+
+      '<td>'+sb+'</td>'+
+      '<td class="r">'+fmt(p.valorCondenacao)+'</td>'+
+      '<td class="r">'+fmt(p.valorCompra)+'</td>'+
+      '<td class="r">'+fmt(rec)+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="ebtn" onclick="modalRec(\''+p.id+'\')">💰</button>'+
+        '<button class="ebtn" onclick="modalEditProc(\''+p.id+'\')">✏️</button>'+
+        '<button class="dbtn" onclick="deleteProc(\''+p.id+'\')">×</button>'+
+      '</td></tr>';
+  }).join('');
+  return'<div class="page-title">'+I.processos+' Processos <button class="btn bp" style="margin-left:12px" onclick="modalNovoProc()">+ Novo</button> <button class="btn" style="margin-left:6px" onclick="document.getElementById(\'imp-proc-file\').click()">⬆ Importar</button> <input type="file" id="imp-proc-file" style="display:none" accept=".xlsx,.xls" onchange="importProcessos(this)"/></div>'+
+  '<div class="filter-bar no-print">'+
+    '<input class="search-input" id="proc-q" placeholder="Buscar cliente, processo, advogado..." oninput="filterProc()"/>'+
+    '<div class="fg" style="max-width:150px"><label>Status</label><select id="proc-st" onchange="filterProc()"><option value="todos">Todos</option><option value="pendente">Pendente</option><option value="liquidado_total">Liq. Total</option><option value="liquidado_parcial">Liq. Parcial</option></select></div>'+
+    '<div class="fg" style="max-width:130px"><label>Empresa</label><select id="proc-emp" onchange="filterProc()"><option value="todos">Todas</option><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+    '<div class="fg" style="max-width:170px"><label>Advogado</label><select id="proc-adv" onchange="filterProc()"><option value="todos">Todos</option>'+advOpts+'</select></div>'+
+    '<button class="print-btn" onclick="window.print()">Imprimir</button>'+
+  '</div>'+
+  '<div class="card" style="padding:0;overflow-x:auto">'+
+    '<table class="tbl"><thead><tr><th>Empresa</th><th>N° Processo</th><th>Cliente</th><th>Advogado</th><th>Status</th><th class="r">Vl. Condenação</th><th class="r">Vl. Compra</th><th class="r">Recebido</th><th>Ações</th></tr></thead>'+
+    '<tbody id="proc-tbody">'+(rows||'<tr><td colspan="9" class="empty">Nenhum processo.</td></tr>')+'</tbody></table>'+
+  '</div>';
+}
+function filterProc(){
+  var q=(document.getElementById('proc-q').value||'').toLowerCase();
+  var st=document.getElementById('proc-st').value;
+  var emp=document.getElementById('proc-emp').value;
+  var adv=document.getElementById('proc-adv').value;
+  var rows=S.processos.filter(function(p){
+    var advN=(S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:''}).name;
+    return(!q||(p.numero||'').toLowerCase().indexOf(q)>=0||(p.cliente||'').toLowerCase().indexOf(q)>=0||advN.toLowerCase().indexOf(q)>=0)&&
+      (st==='todos'||p.status===st)&&(emp==='todos'||(p.empresa||'PBL')===emp)&&(adv==='todos'||p.advogadoId===adv);
+  }).map(function(p){
+    var adv2=(S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:p.advogadoId||'—'}).name;
+    var rec=(p.recebimentos||[]).reduce(function(s,r){return s+(r.valor||0);},0);
+    var sb=p.status==='liquidado_total'?'<span class="badge b-tot">Total</span>':p.status==='liquidado_parcial'?'<span class="badge b-par">Parcial</span>':'<span class="badge b-pend">Pendente</span>';
+    var emp2=p.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    return'<tr><td>'+emp2+'</td><td style="font-size:11px">'+esc(p.numero)+'</td><td>'+esc(p.cliente)+'</td><td>'+esc(adv2)+'</td><td>'+sb+'</td><td class="r">'+fmt(p.valorCondenacao)+'</td><td class="r">'+fmt(p.valorCompra)+'</td><td class="r">'+fmt(rec)+'</td><td style="white-space:nowrap"><button class="ebtn" onclick="modalRec(\''+p.id+'\')">💰</button><button class="ebtn" onclick="modalEditProc(\''+p.id+'\')">✏️</button><button class="dbtn" onclick="deleteProc(\''+p.id+'\')">×</button></td></tr>';
+  }).join('');
+  document.getElementById('proc-tbody').innerHTML=rows||'<tr><td colspan="9" class="empty">Nenhum resultado.</td></tr>';
+}
+function getAdvOpts(sel){return'<option value="">Selecione...</option>'+S.lawyers.map(function(l){return'<option value="'+l.id+'"'+(sel===l.id?' selected':'')+'>'+l.name+'</option>';}).join('');}
+function calcDesagio(){
+  var cond=parseFloat(document.getElementById('m-vcond').value)||0;
+  var cli=parseFloat(document.getElementById('m-vcli').value)||0;
+  var comp=parseFloat(document.getElementById('m-vcomp').value)||0;
+  var pct=document.getElementById('m-pcomp');var el=document.getElementById('desagio-calc');
+  if(cli&&pct&&pct.value)comp=(cli*parseFloat(pct.value)/100);
+  if(cond&&comp){
+    var desag=((cond-comp)/cond*100).toFixed(2);
+    var fat=comp>0?((cli||cond)-comp):0;
+    if(el)el.textContent='Deságio: '+desag+'% | Prev. Faturamento: '+fmt(fat);
+  }else{if(el)el.textContent='';}
+  if(cli&&pct&&pct.value){var vc=document.getElementById('m-vcomp');if(vc)vc.value=(cli*parseFloat(pct.value)/100).toFixed(2);}
+}
+function modalNovoProc(){
+  showModal('<button class="modal-close" onclick="closeModal()">×</button>'+
+    '<div class="modal-title">Novo Processo</div>'+
+    '<div class="g2" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Empresa *</label><select id="m-emp"><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+      '<div class="fg"><label>N° Processo *</label><input type="text" id="m-num" placeholder="0000000-00.0000.0.00.0000"/></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-bottom:10px"><label>Cliente *</label><input type="text" id="m-cli" placeholder="Nome completo do cliente"/></div>'+
+    '<div class="g3" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Advogado *</label><select id="m-adv">'+getAdvOpts('')+'</select></div>'+
+      '<div class="fg"><label>Atendente</label><input type="text" id="m-ate"/></div>'+
+      '<div class="fg"><label>Matéria</label><input type="text" id="m-mat" placeholder="RPV, Precatório..."/></div>'+
+    '</div>'+
+    '<div class="g4" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Réu</label><input type="text" id="m-reu"/></div>'+
+      '<div class="fg"><label>Foro</label><input type="text" id="m-foro"/></div>'+
+      '<div class="fg"><label>Comarca</label><input type="text" id="m-com"/></div>'+
+      '<div class="fg"><label>Data Compra</label><input type="date" id="m-datc" value="'+todayStr()+'"/></div>'+
+    '</div>'+
+    '<div class="g4" style="margin-bottom:6px">'+
+      '<div class="fg"><label>Vl. Condenação (R$)</label><input type="number" id="m-vcond" min="0" step="0.01" placeholder="0,00" oninput="calcDesagio()"/></div>'+
+      '<div class="fg"><label>Vl. Cliente (R$)</label><input type="number" id="m-vcli" min="0" step="0.01" placeholder="0,00" oninput="calcDesagio()"/></div>'+
+      '<div class="fg"><label>% Compra</label><input type="number" id="m-pcomp" min="0" max="100" step="0.01" placeholder="0,00" oninput="calcDesagio()"/></div>'+
+      '<div class="fg"><label>Vl. Compra (R$)</label><input type="number" id="m-vcomp" min="0" step="0.01" placeholder="0,00" oninput="calcDesagio()"/></div>'+
+    '</div>'+
+    '<div class="calc-desagio" id="desagio-calc"></div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">'+
+      '<button class="btn" onclick="closeModal()">Cancelar</button>'+
+      '<button class="btn bp" onclick="salvarProc(null)">Salvar</button>'+
+    '</div>');
+}
+function salvarProc(id){
+  var num=(document.getElementById('m-num').value||'').trim();
+  var cli=(document.getElementById('m-cli').value||'').trim();
+  var adv=document.getElementById('m-adv').value;
+  if(!num||!cli||!adv){alert('Preencha Empresa, N° Processo, Cliente e Advogado.');return;}
+  var p={
+    id:id||uid(),empresa:document.getElementById('m-emp').value,numero:num,cliente:cli,advogadoId:adv,
+    atendente:(document.getElementById('m-ate').value||'').trim(),
+    reu:(document.getElementById('m-reu')?document.getElementById('m-reu').value||'':''),
+    materia:(document.getElementById('m-mat').value||'').trim(),
+    foro:(document.getElementById('m-foro')?document.getElementById('m-foro').value||'':''),
+    comarca:(document.getElementById('m-com')?document.getElementById('m-com').value||'':''),
+    dataCompra:document.getElementById('m-datc').value,
+    valorCondenacao:parseFloat(document.getElementById('m-vcond').value)||0,
+    valorCliente:parseFloat(document.getElementById('m-vcli').value)||0,
+    percCompra:parseFloat(document.getElementById('m-pcomp').value)||0,
+    valorCompra:parseFloat(document.getElementById('m-vcomp').value)||0,
+    status:'pendente',recebimentos:[]
+  };
+  if(id){var idx=S.processos.findIndex(function(x){return x.id===id;});if(idx>=0){p.status=S.processos[idx].status;p.recebimentos=S.processos[idx].recebimentos;S.processos[idx]=p;}}
+  else S.processos.push(p);
+  closeModal();saveData();navigate('processos');
+}
+function modalEditProc(id){
+  var p=S.processos.find(function(x){return x.id===id;});if(!p)return;
+  showModal('<button class="modal-close" onclick="closeModal()">×</button>'+
+    '<div class="modal-title">Editar Processo</div>'+
+    '<div class="g2" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Empresa</label><select id="m-emp"><option value="PBL"'+(p.empresa!=='FIDC'?' selected':'')+'>PBL</option><option value="FIDC"'+(p.empresa==='FIDC'?' selected':'')+'>FIDC</option></select></div>'+
+      '<div class="fg"><label>N° Processo</label><input type="text" id="m-num" value="'+esc(p.numero)+'"/></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-bottom:10px"><label>Cliente</label><input type="text" id="m-cli" value="'+esc(p.cliente)+'"/></div>'+
+    '<div class="g3" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Advogado</label><select id="m-adv">'+getAdvOpts(p.advogadoId)+'</select></div>'+
+      '<div class="fg"><label>Atendente</label><input type="text" id="m-ate" value="'+esc(p.atendente||'')+'"/></div>'+
+      '<div class="fg"><label>Matéria</label><input type="text" id="m-mat" value="'+esc(p.materia||'')+'"/></div>'+
+    '</div>'+
+    '<div class="g4" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Data Compra</label><input type="date" id="m-datc" value="'+(p.dataCompra||'')+'"/></div>'+
+      '<div class="fg"><label>Vl. Condenação</label><input type="number" id="m-vcond" value="'+(p.valorCondenacao||0)+'" step="0.01" oninput="calcDesagio()"/></div>'+
+      '<div class="fg"><label>Vl. Cliente</label><input type="number" id="m-vcli" value="'+(p.valorCliente||0)+'" step="0.01" oninput="calcDesagio()"/></div>'+
+      '<div class="fg"><label>Vl. Compra</label><input type="number" id="m-vcomp" value="'+(p.valorCompra||0)+'" step="0.01" oninput="calcDesagio()"/></div>'+
+    '</div>'+
+    '<div class="calc-desagio" id="desagio-calc"></div>'+
+    '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px">'+
+      '<button class="btn" onclick="closeModal()">Cancelar</button>'+
+      '<button class="btn bp" onclick="salvarProc(\''+id+'\')">Salvar</button>'+
+    '</div>');
+  calcDesagio();
+}
+function deleteProc(id){if(!confirm('Excluir processo?'))return;S.processos=S.processos.filter(function(p){return p.id!==id;});saveData();navigate('processos');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── RECEBIMENTOS ────────────────────────────────────────────
+function modalRec(procId){var p=S.processos.find(function(x){return x.id===procId;});if(!p)return;renderModalRec(p);}
+function renderModalRec(p){
+  var recs=p.recebimentos||[];
+  var totRec=recs.reduce(function(s,r){return s+(r.valor||0);},0);
+  var fat=totRec-(p.valorCompra||0);
+  var stOpts=['pendente','liquidado_total','liquidado_parcial'].map(function(s){return'<option value="'+s+'"'+(p.status===s?' selected':'')+'>'+{pendente:'Pendente',liquidado_total:'Liq. Total',liquidado_parcial:'Liq. Parcial'}[s]+'</option>';}).join('');
+  var rrows=recs.map(function(r){return'<tr><td>'+fmtDate(r.data)+'</td><td>'+esc(r.banco)+'</td><td class="r">'+fmt(r.valor)+'</td><td class="r">'+(r.devol?fmt(r.devol):'—')+'</td><td><button class="dbtn" onclick="deleteRec(\''+p.id+'\',\''+r.id+'\')">×</button></td></tr>';}).join('');
+  showModal('<button class="modal-close" onclick="closeModal()">×</button>'+
+    '<div class="modal-title">Recebimentos — '+esc(p.numero)+'</div>'+
+    '<div style="background:var(--vl);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:12px">'+
+      '<div style="font-weight:600;margin-bottom:4px">'+esc(p.cliente)+' <span class="'+(p.empresa==='FIDC'?'emp-fidc':'emp-pbl')+'">'+esc(p.empresa||'PBL')+'</span></div>'+
+      '<div style="display:flex;gap:16px;flex-wrap:wrap">'+
+        '<span>Vl. Compra: <strong>'+fmt(p.valorCompra)+'</strong></span>'+
+        '<span>Total Recebido: <strong>'+fmt(totRec)+'</strong></span>'+
+        '<span>Faturamento: <strong style="color:'+(fat>=0?'#1D6B3A':'#A32D2D')+'">'+fmt(fat)+'</strong></span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="fg" style="max-width:220px;margin-bottom:14px"><label>Status</label><select id="proc-st-sel" onchange="updateProcStatus(\''+p.id+'\',this.value)">'+stOpts+'</select></div>'+
+    '<div class="g4" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Data *</label><input type="date" id="rec-data" value="'+todayStr()+'"/></div>'+
+      '<div class="fg"><label>Banco *</label><input type="text" id="rec-banco" placeholder="Ex: Banco Genial"/></div>'+
+      '<div class="fg"><label>Valor (R$) *</label><input type="number" id="rec-valor" min="0" step="0.01"/></div>'+
+      '<div class="fg"><label>Devolução</label><input type="number" id="rec-devol" min="0" step="0.01"/></div>'+
+    '</div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn bp" onclick="addRec(\''+p.id+'\')">+ Adicionar</button></div>'+
+    '<table class="tbl"><thead><tr><th>Data</th><th>Banco</th><th class="r">Valor</th><th class="r">Devolução</th><th>Ação</th></tr></thead>'+
+    '<tbody>'+(rrows||'<tr><td colspan="5" class="empty">Nenhum recebimento.</td></tr>')+'</tbody></table>'+
+    '<div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn" onclick="closeModal()">Fechar</button></div>');
+}
+function updateProcStatus(id,status){var p=S.processos.find(function(x){return x.id===id;});if(p){p.status=status;saveData();}}
+function addRec(procId){
+  var p=S.processos.find(function(x){return x.id===procId;});if(!p)return;
+  var data=document.getElementById('rec-data').value;
+  var banco=(document.getElementById('rec-banco').value||'').trim();
+  var valor=parseFloat(document.getElementById('rec-valor').value)||0;
+  var devol=parseFloat(document.getElementById('rec-devol').value)||0;
+  if(!data||!banco||!valor){alert('Preencha Data, Banco e Valor.');return;}
+  if(!p.recebimentos)p.recebimentos=[];
+  p.recebimentos.push({id:uid(),data:data,banco:banco,valor:valor,devol:devol||null});
+  // Lançar no financeiro automaticamente
+  var m=getMes();if(!m.financeiro)m.financeiro=[];
+  m.financeiro.push({
+    id:uid(),empresa:p.empresa||'PBL',tipo:'entrada',subtipo:p.status==='liquidado_parcial'?'liquidacao_parcial':'liquidacao_total',
+    data:data,valor:valor,banco:banco,
+    descricao:'Recebimento '+esc(p.numero)+' — '+esc(p.cliente),
+    processoId:p.id,proc:p.numero,categoria:'Liquidação',obs:'',origem:'manual'
+  });
+  saveData();renderModalRec(p);
+}
+function deleteRec(procId,recId){var p=S.processos.find(function(x){return x.id===procId;});if(!p)return;p.recebimentos=p.recebimentos.filter(function(r){return r.id!==recId;});saveData();renderModalRec(p);}
+
+// ── IMPORTAR PROCESSOS ──────────────────────────────────────
+function importProcessos(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){showToast('Arquivo vazio!');input.value='';return;}
+      var keys=Object.keys(rows[0]);
+      var novos=0,ignorados=0;
+      rows.forEach(function(r){
+        var num=xlsxGet(r,keys,['PROCESSO','NUMERO','N°','NO'],false);
+        var cli=xlsxGet(r,keys,['CLIENTE','AUTOR'],false);
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false));
+        var emp=xlsxGet(r,keys,['EMPRESA','TITULARIDADE','TITULAR'],false).toUpperCase();
+        var empresa=emp.indexOf('FIDC')>=0?'FIDC':'PBL';
+        var cond=xlsxGet(r,keys,['CONDENACAO','CONDENA','CONDENAÇÃO'],true);
+        var vcli=xlsxGet(r,keys,['VALOR CLIENTE','VALORCLI'],true)||cond;
+        var vcomp=xlsxGet(r,keys,['VALOR COMPRA','VALORCOMP','COMPRA'],true);
+        var datc=parseDataBR(xlsxGet(r,keys,['DATA COMPRA','DATA'],false));
+        var mat=xlsxGet(r,keys,['MATERIA','MATÉRIA'],false);
+        var reu=xlsxGet(r,keys,['REU','RÉU'],false);
+        if(!num||!cli){ignorados++;return;}
+        if(S.processos.find(function(p){return p.numero===num;})){ignorados++;return;}
+        var l=S.lawyers.find(function(x){var k=normAdv(x.name);return k===adv||k.split(' ')[0]===adv.split(' ')[0];});
+        S.processos.push({
+          id:uid(),empresa:empresa,numero:num,cliente:cli,
+          advogadoId:l?l.id:'',atendente:'',reu:reu,materia:mat,
+          foro:'',comarca:'',dataCompra:datc,
+          valorCondenacao:cond,valorCliente:vcli,percCompra:0,valorCompra:vcomp,
+          status:'pendente',recebimentos:[]
+        });
+        novos++;
+      });
+      saveData();navigate('processos');
+      showToast(novos+' processos importados. '+ignorados+' ignorados (duplicados ou sem dados).');
+    }catch(err){showToast('Erro: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+// ════════════════════════════════════════════════════════════
+// FINANCEIRO — PBL e FIDC separados, com importação
+// ════════════════════════════════════════════════════════════
+function pageFinanceiro(){
+  var m=getMes();
+  var fin=m.financeiro||[];
+  var procOpts=S.processos.map(function(p){return'<option value="'+p.id+'">['+esc(p.empresa||'PBL')+'] '+esc(p.numero)+' — '+esc(p.cliente)+'</option>';}).join('');
+  var empFilter=function(emp){return fin.filter(function(f){return(f.empresa||'PBL')===emp;});};
+  var pblFin=empFilter('PBL');var fidcFin=empFilter('FIDC');
+  var pblEnt=pblFin.filter(function(f){return f.tipo==='entrada';}).reduce(function(s,f){return s+f.valor;},0);
+  var pblSai=pblFin.filter(function(f){return f.tipo==='saida'||f.tipo==='despesa';}).reduce(function(s,f){return s+f.valor;},0);
+  var fidcEnt=fidcFin.filter(function(f){return f.tipo==='entrada';}).reduce(function(s,f){return s+f.valor;},0);
+  var fidcSai=fidcFin.filter(function(f){return f.tipo==='saida'||f.tipo==='despesa';}).reduce(function(s,f){return s+f.valor;},0);
+  var rows=fin.slice().sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(f){
+    var emp=f.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    var tb=f.tipo==='entrada'?'<span class="badge b-entrada">Entrada</span>':'<span class="badge b-saida">Saída</span>';
+    var proc=f.processoId?(S.processos.find(function(p){return p.id===f.processoId;})||{numero:f.proc||'—'}).numero:(f.proc||'—');
+    var cor=f.tipo==='entrada'?'#1D6B3A':'#A32D2D';
+    var sinal=f.tipo==='entrada'?'+':'−';
+    return'<tr><td>'+fmtDate(f.data)+'</td><td>'+emp+'</td><td>'+tb+'</td><td>'+esc(f.descricao)+'</td><td style="font-size:11px">'+esc(proc)+'</td><td>'+esc(f.banco||'')+'</td><td class="r" style="color:'+cor+'"><strong>'+sinal+' '+fmt(f.valor)+'</strong></td><td><button class="dbtn" onclick="deleteFin(\''+f.id+'\')">×</button></td></tr>';
+  }).join('');
+  return'<div class="page-title">'+I.financeiro+' Lançamentos Financeiros</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">'+
+    '<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="emp-pbl">PBL</span><span style="font-size:13px;font-weight:700">Financeiro PBL</span></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
+        '<div class="mc"><div class="ml">Entradas</div><div class="mv" style="font-size:16px">'+fmt(pblEnt)+'</div></div>'+
+        '<div class="mc red"><div class="ml">Saídas</div><div class="mv red" style="font-size:16px">'+fmt(pblSai)+'</div></div>'+
+        '<div class="mc '+(pblEnt-pblSai>=0?'':'red')+'"><div class="ml">Resultado</div><div class="mv '+(pblEnt-pblSai>=0?'':'red')+'" style="font-size:16px">'+fmt(pblEnt-pblSai)+'</div></div>'+
+      '</div></div>'+
+    '<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span class="emp-fidc">FIDC</span><span style="font-size:13px;font-weight:700">Financeiro FIDC</span></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
+        '<div class="mc blue"><div class="ml">Entradas</div><div class="mv blue" style="font-size:16px">'+fmt(fidcEnt)+'</div></div>'+
+        '<div class="mc red"><div class="ml">Saídas</div><div class="mv red" style="font-size:16px">'+fmt(fidcSai)+'</div></div>'+
+        '<div class="mc '+(fidcEnt-fidcSai>=0?'blue':'red')+'"><div class="ml">Resultado</div><div class="mv '+(fidcEnt-fidcSai>=0?'blue':'red')+'" style="font-size:16px">'+fmt(fidcEnt-fidcSai)+'</div></div>'+
+      '</div></div>'+
+  '</div>'+
+  // Importar liquidados no financeiro
+  '<label class="imp" for="fin-imp-liq" style="margin-bottom:14px"><input type="file" id="fin-imp-liq" class="fhide" accept=".xlsx,.xls" onchange="importLiqFinanceiro(this)"/>'+
+    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar Liquidados → Financeiro</div><div class="imp-sub">Importa planilha e lança entradas automaticamente por empresa</div></div>'+
+    '<span class="imp-status">Importar</span>'+
+  '</label>'+
+  '<div class="st">Novo lançamento manual</div>'+
+  '<div class="card">'+
+    '<div class="g4" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Empresa *</label><select id="fin-emp"><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+      '<div class="fg"><label>Tipo *</label><select id="fin-tipo"><option value="entrada">Entrada</option><option value="saida">Saída / Despesa</option></select></div>'+
+      '<div class="fg"><label>Data *</label><input type="date" id="fin-data" value="'+todayStr()+'"/></div>'+
+      '<div class="fg"><label>Valor (R$) *</label><input type="number" id="fin-valor" min="0" step="0.01" placeholder="0,00"/></div>'+
+    '</div>'+
+    '<div class="g3" style="margin-bottom:10px">'+
+      '<div class="fg" style="grid-column:1/-1"><label>Descrição *</label><input type="text" id="fin-desc" placeholder="Ex: Liquidação processo — Cliente João Silva"/></div>'+
+    '</div>'+
+    '<div class="g4" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Banco / Conta</label><input type="text" id="fin-banco" placeholder="Ex: Banco Genial"/></div>'+
+      '<div class="fg"><label>Processo vinculado</label><select id="fin-proc"><option value="">Nenhum</option>'+procOpts+'</select></div>'+
+      '<div class="fg"><label>Categoria</label><input type="text" id="fin-cat" placeholder="Liquidação, Custo..."/></div>'+
+      '<div style="display:flex;align-items:flex-end"><button class="btn bp" onclick="addFin()" style="width:100%">+ Registrar</button></div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="filter-bar no-print">'+
+    '<div class="fg" style="max-width:120px"><label>Empresa</label><select id="fin-emp-f" onchange="filterFin()"><option value="todos">Todas</option><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+    '<div class="fg" style="max-width:130px"><label>Tipo</label><select id="fin-tf" onchange="filterFin()"><option value="todos">Todos</option><option value="entrada">Entradas</option><option value="saida">Saídas</option></select></div>'+
+    '<div class="fg"><label>Data início</label><input type="date" id="fin-di" onchange="filterFin()"/></div>'+
+    '<div class="fg"><label>Data fim</label><input type="date" id="fin-df" onchange="filterFin()"/></div>'+
+    '<input class="search-input" id="fin-q" placeholder="Buscar descrição..." oninput="filterFin()"/>'+
+    '<button class="print-btn" onclick="window.print()">Imprimir</button>'+
+  '</div>'+
+  '<div class="card" style="padding:0;overflow-x:auto">'+
+    '<table class="tbl"><thead><tr><th>Data</th><th>Empresa</th><th>Tipo</th><th>Descrição</th><th>Processo</th><th>Banco</th><th class="r">Valor</th><th>Ação</th></tr></thead>'+
+    '<tbody id="fin-tbody">'+(rows||'<tr><td colspan="8" class="empty">Nenhum lançamento.</td></tr>')+'</tbody></table>'+
+  '</div>';
+}
+function addFin(){
+  var emp=(document.getElementById('fin-emp')||{value:'PBL'}).value;
+  var tipo=document.getElementById('fin-tipo').value;
+  var data=document.getElementById('fin-data').value;
+  var valor=parseFloat(document.getElementById('fin-valor').value)||0;
+  var desc=(document.getElementById('fin-desc').value||'').trim();
+  var banco=(document.getElementById('fin-banco').value||'').trim();
+  var proc=document.getElementById('fin-proc')?document.getElementById('fin-proc').value:'';
+  var cat=(document.getElementById('fin-cat').value||'').trim();
+  if(!data||!valor||!desc){alert('Preencha Data, Valor e Descrição.');return;}
+  var m=getMes();if(!m.financeiro)m.financeiro=[];
+  m.financeiro.push({id:uid(),empresa:emp,tipo:tipo,subtipo:'',data:data,valor:valor,banco:banco,descricao:desc,processoId:proc,proc:'',categoria:cat,obs:'',origem:'manual'});
+  saveData();navigate('financeiro');
+}
+function deleteFin(id){if(!confirm('Excluir lançamento?'))return;var m=getMes();m.financeiro=m.financeiro.filter(function(f){return f.id!==id;});saveData();navigate('financeiro');}
+function filterFin(){
+  var m=getMes();var fin=m.financeiro||[];
+  var empF=(document.getElementById('fin-emp-f')||{value:'todos'}).value;
+  var tipo=(document.getElementById('fin-tf')||{value:'todos'}).value;
+  var di=(document.getElementById('fin-di')||{value:''}).value;
+  var df=(document.getElementById('fin-df')||{value:''}).value;
+  var q=((document.getElementById('fin-q')||{value:''}).value||'').toLowerCase();
+  var rows=fin.filter(function(f){
+    return(empF==='todos'||(f.empresa||'PBL')===empF)&&
+      (tipo==='todos'||f.tipo===tipo)&&
+      (!di||f.data>=di)&&(!df||f.data<=df)&&
+      (!q||(f.descricao||'').toLowerCase().indexOf(q)>=0);
+  }).sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(f){
+    var emp2=f.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    var tb=f.tipo==='entrada'?'<span class="badge b-entrada">Entrada</span>':'<span class="badge b-saida">Saída</span>';
+    var proc2=f.processoId?(S.processos.find(function(p){return p.id===f.processoId;})||{numero:f.proc||'—'}).numero:(f.proc||'—');
+    var cor=f.tipo==='entrada'?'#1D6B3A':'#A32D2D';
+    var sinal=f.tipo==='entrada'?'+':'−';
+    return'<tr><td>'+fmtDate(f.data)+'</td><td>'+emp2+'</td><td>'+tb+'</td><td>'+esc(f.descricao)+'</td><td style="font-size:11px">'+esc(proc2)+'</td><td>'+esc(f.banco||'')+'</td><td class="r" style="color:'+cor+'"><strong>'+sinal+' '+fmt(f.valor)+'</strong></td><td><button class="dbtn" onclick="deleteFin(\''+f.id+'\')">×</button></td></tr>';
+  }).join('');
+  var el=document.getElementById('fin-tbody');
+  if(el)el.innerHTML=rows||'<tr><td colspan="8" class="empty">Nenhum resultado.</td></tr>';
+}
+// Importar liquidados direto para o financeiro
+function importLiqFinanceiro(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){showToast('Arquivo vazio!');input.value='';return;}
+      var keys=Object.keys(rows[0]);
+      var relData=[];
+      rows.forEach(function(r){
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false));
+        var val=xlsxGet(r,keys,['VALOR'],true);
+        var liq=xlsxGet(r,keys,['LIQUID'],false);
+        var proc=xlsxGet(r,keys,['PROCESSO'],false);
+        var datRaw=xlsxGet(r,keys,['DATA'],false);
+        var tit=xlsxGet(r,keys,['TITULARIDADE','TITULAR'],false).toUpperCase();
+        var empresa=tit.indexOf('FIDC')>=0?'FIDC':'PBL';
+        var dat=parseDataBR(datRaw);
+        if(!adv||adv==='ADVOGADO'||!val)return;
+        var tipo=liq.toUpperCase().indexOf('PARCIAL')>=0?'Parcial':'Total';
+        relData.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:proc,val:val,tipo:tipo,data:dat,empresa:empresa});
+      });
+      var novos=lancarEntradasFinanceiro(relData);
+      saveData();navigate('financeiro');
+      showToast(novos+' entradas lançadas no financeiro!');
+    }catch(err){showToast('Erro: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+
+// ════════════════════════════════════════════════════════════
+// FLUXO DE CAIXA
+// ════════════════════════════════════════════════════════════
+function pageFluxoCaixa(){
+  var m=getMes();var fin=m.financeiro||[];
+  var byMes={};
+  fin.forEach(function(f){
+    var mes=(f.data||'').slice(0,7);if(!mes)return;
+    if(!byMes[mes])byMes[mes]={ent:0,sai:0,pbl_ent:0,pbl_sai:0,fidc_ent:0,fidc_sai:0};
+    if(f.tipo==='entrada'){byMes[mes].ent+=f.valor;if(f.empresa==='FIDC')byMes[mes].fidc_ent+=f.valor;else byMes[mes].pbl_ent+=f.valor;}
+    else{byMes[mes].sai+=f.valor;if(f.empresa==='FIDC')byMes[mes].fidc_sai+=f.valor;else byMes[mes].pbl_sai+=f.valor;}
+  });
+  var meses=Object.keys(byMes).sort().reverse();
+  var rows=meses.map(function(mes){
+    var b=byMes[mes];var res=b.ent-b.sai;var d=new Date(mes+'-02');var ml=d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    return'<tr><td>'+ml+'</td><td class="r" style="color:#1D6B3A">'+fmt(b.ent)+'</td><td class="r" style="color:#A32D2D">'+fmt(b.sai)+'</td><td class="r" style="color:'+(res>=0?'#1D6B3A':'#A32D2D');+'"<strong>'+fmt(res)+'</strong></td>'+
+    '<td class="r">'+fmt(b.pbl_ent)+'</td><td class="r">'+fmt(b.fidc_ent)+'</td></tr>';
+  }).join('');
+  return'<div class="page-title">'+I.fluxo+' Fluxo de Caixa</div>'+
+  '<div class="card" style="padding:0;overflow-x:auto">'+
+    '<table class="tbl"><thead><tr><th>Mês</th><th class="r">Entradas</th><th class="r">Saídas</th><th class="r">Resultado</th><th class="r">PBL Entradas</th><th class="r">FIDC Entradas</th></tr></thead>'+
+    '<tbody>'+(rows||'<tr><td colspan="6" class="empty">Nenhum lançamento.</td></tr>')+'</tbody></table>'+
+  '</div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// OPERACIONAL / PROD.
+// ════════════════════════════════════════════════════════════
+function pageOperacional(){
+  var m=getMes();
+  var lawyerOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  var list=!S.lawyers.length?'<div class="empty">Nenhum advogado cadastrado.</div>':
+    S.lawyers.map(function(l,i){return'<div class="lrow"><div class="av" style="'+avSt(i)+'">'+ini(l.name)+'</div><div class="ln">'+esc(l.name)+'</div><div style="font-size:12px;color:var(--mt)">Pró-labore: '+fmt(l.prolabore)+'</div><button class="btn bd2" onclick="removeLawyer(\''+l.id+'\')">Remover</button></div>';}).join('');
+  return'<div class="page-title">'+I.operacional+' Operacional / Produção</div>'+
+  '<div class="st">Advogados</div>'+
+  '<div class="card">'+
+    '<div class="frow"><div class="fg" style="flex:2"><label>Nome</label><input type="text" id="nn" placeholder="Nome do advogado"/></div><div class="fg" style="max-width:150px"><label>Pró-labore (R$)</label><input type="number" id="np" placeholder="0,00" min="0" step="0.01"/></div><button class="btn bp" onclick="addLawyer()">Adicionar</button></div>'+
+  '</div>'+
+  '<div class="card">'+list+'</div>'+
+  '<div class="st">Importar produção via planilha</div>'+
+  '<div class="card">'+
+    '<p style="font-size:12px;color:var(--mt);margin-bottom:12px">Importe as planilhas mensais — os dados ficam salvos para o mês selecionado.</p>'+
+    '<label class="imp" for="file-liq-g"><input type="file" id="file-liq-g" class="fhide" accept=".xlsx,.xls" onchange="importLiqGeral(this)"/><div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div><div class="imp-text"><div class="imp-title">Importar Liquidados (geral)</div><div class="imp-sub">ADVOGADO · PROCESSOS · VALOR · LIQUIDAÇÃO · DATA · TITULARIDADE</div></div><span class="imp-status" id="s-liq">Nenhum</span></label>'+
+    '<label class="imp" for="file-val-g"><input type="file" id="file-val-g" class="fhide" accept=".xlsx,.xls" onchange="importValGeral(this)"/><div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div><div class="imp-text"><div class="imp-title">Importar Validação / Distribuição</div><div class="imp-sub">ADVOGADO · OBS (VALIDADO / contrato validado)</div></div><span class="imp-status" id="s-val">Nenhum</span></label>'+
+    '<label class="imp" for="file-dil-g"><input type="file" id="file-dil-g" class="fhide" accept=".xlsx,.xls" onchange="importDilGeral(this)"/><div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div><div class="imp-text"><div class="imp-title">Importar Diligências (Capa a Capa)</div><div class="imp-sub">VAL. · VALOR · CONTRATO (PAGO)</div></div><span class="imp-status" id="s-dil">Nenhum</span></label>'+
+    '<div class="div"></div>'+
+    '<div class="st" style="margin-top:0">Ajuste manual por advogado</div>'+
+    '<div class="frow"><div class="fg" style="max-width:220px"><label>Advogado</label><select id="sel-man"><option value="">Selecione...</option>'+lawyerOpts+'</select></div><div class="fg"><label>Proc. validados</label><input type="number" id="man-pv" min="0" placeholder="0"/></div><div class="fg"><label>Contr. validados</label><input type="number" id="man-cv" min="0" placeholder="0"/></div><div class="fg"><label>Capa a capa</label><input type="number" id="man-capa" min="0" placeholder="0"/></div><div class="fg"><label>Auditoria</label><input type="number" id="man-au" min="0" placeholder="0"/></div><button class="btn bp" onclick="saveManual()">Salvar</button></div>'+
+  '</div>';
+}
+function addLawyer(){var n=(document.getElementById('nn').value||'').trim(),p=parseFloat(document.getElementById('np').value)||0;if(!n){alert('Informe o nome.');return;}var id=n.toLowerCase().replace(/\s+/g,'-').normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(S.lawyers.find(function(l){return l.id===id;})){alert('Advogado já existe.');return;}S.lawyers.push({id:id,name:n,prolabore:p});document.getElementById('nn').value='';document.getElementById('np').value='';saveData();navigate('operacional');}
+function removeLawyer(id){if(!confirm('Remover?'))return;S.lawyers=S.lawyers.filter(function(l){return l.id!==id;});var m=getMes();delete m.entries[id];saveData();navigate('operacional');}
+function importLiqGeral(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){showToast('Arquivo vazio!');input.value='';return;}
+      var keys=Object.keys(rows[0]);
+      var byAdv={},dashArr=[],relArr=[];
+      rows.forEach(function(r){
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false));
+        var val=xlsxGet(r,keys,['VALOR'],true);
+        var liq=xlsxGet(r,keys,['LIQUID'],false);
+        var proc=xlsxGet(r,keys,['PROCESSO'],false);
+        var datRaw=xlsxGet(r,keys,['DATA'],false);
+        var tit=xlsxGet(r,keys,['TITULARIDADE','TITULAR'],false).toUpperCase();
+        var empresa=tit.indexOf('FIDC')>=0?'FIDC':'PBL';
+        var dat=parseDataBR(datRaw);
+        if(!adv||adv==='ADVOGADO')return;
+        var tipo=liq.toUpperCase().indexOf('PARCIAL')>=0?'Parcial':'Total';
+        if(!byAdv[adv])byAdv[adv]=[];
+        byAdv[adv].push({ref:proc,valor:val,tipo:tipo});
+        dashArr.push({adv:adv,val:val,tipo:tipo,empresa:empresa});
+        relArr.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:proc,val:val,tipo:tipo,data:dat,empresa:empresa});
+      });
+      var m=getMes();
+      m.dashData=dashArr;m.relLiqData=relArr;
+      var matched=distribuirEntries(byAdv);
+      var novosL=lancarEntradasFinanceiro(relArr);
+      var el=document.getElementById('s-liq');if(el)el.textContent=dashArr.length+' proc · '+matched+' adv';
+      saveData();showToast(dashArr.length+' proc para '+matched+' adv. '+novosL+' entradas financeiro!');
+    }catch(err){showToast('Erro: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+function importValGeral(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      var keys=Object.keys(rows[0]);
+      var byAdv={};
+      rows.forEach(function(r){
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false)||String(r[Object.keys(r)[2]]||''));
+        var obs=(xlsxGet(r,keys,['OBS'],false)||String(r[Object.keys(r)[3]]||'')).toUpperCase();
+        if(!adv||adv==='ADVOGADO')return;
+        if(!byAdv[adv])byAdv[adv]={pv:0,cv:0};
+        if(obs.indexOf('VALIDADO')>=0&&obs.indexOf('NAO APROVADO')<0&&obs.indexOf('NÃO APROVADO')<0&&obs.indexOf('FALTA CONTRATO')<0){
+          if(obs.indexOf('CONTRATO')>=0)byAdv[adv].cv++;else byAdv[adv].pv++;
+        }
+      });
+      var matched=0;var m=getMes();
+      S.lawyers.forEach(function(l){
+        var key=normAdv(l.name);var fn=key.split(' ')[0];
+        var fk=Object.keys(byAdv).find(function(k){return k===key||k.split(' ')[0]===fn||fn===k.split(' ')[0];});
+        if(fk){if(!m.entries[l.id])m.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};m.entries[l.id].procValid=byAdv[fk].pv;m.entries[l.id].contValid=byAdv[fk].cv;matched++;}
+      });
+      var el=document.getElementById('s-val');if(el)el.textContent=matched+' adv';
+      saveData();showToast('Validações importadas: '+matched+' advogados!');
+    }catch(err){showToast('Erro: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+function importDilGeral(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      var keys=Object.keys(rows[0]);
+      var byInit={};
+      rows.forEach(function(r){
+        var contrato=xlsxGet(r,keys,['CONTRATO'],false).toUpperCase();
+        var val2=xlsxGet(r,keys,['VAL.','VAL'],false).toUpperCase();
+        var valor=xlsxGet(r,keys,['VALOR'],true);
+        if(contrato!=='PAGO'||!val2)return;
+        if(!byInit[val2])byInit[val2]={qtd:0,vol:0};
+        byInit[val2].qtd++;byInit[val2].vol+=valor;
+      });
+      var matched=0;var m=getMes();
+      S.lawyers.forEach(function(l){
+        var initials=l.name.trim().split(' ').slice(0,2).map(function(x){return x[0].toUpperCase();}).join('');
+        if(byInit[initials]){if(!m.entries[l.id])m.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};m.entries[l.id].capaCapa=byInit[initials].qtd;m.entries[l.id].volEntradas=byInit[initials].vol;matched++;}
+      });
+      var el=document.getElementById('s-dil');if(el)el.textContent=matched+' adv';
+      saveData();showToast('Diligências importadas: '+matched+' advogados!');
+    }catch(err){showToast('Erro: '+err.message);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+function saveManual(){
+  var lid=document.getElementById('sel-man').value;if(!lid){showToast('Selecione um advogado.');return;}
+  var m=getMes();if(!m.entries[lid])m.entries[lid]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+  var g=function(id){var el=document.getElementById(id);return el&&el.value!==''?el.value:null;};
+  if(g('man-pv')!==null)m.entries[lid].procValid=parseInt(g('man-pv'))||0;
+  if(g('man-cv')!==null)m.entries[lid].contValid=parseInt(g('man-cv'))||0;
+  if(g('man-capa')!==null)m.entries[lid].capaCapa=parseInt(g('man-capa'))||0;
+  if(g('man-au')!==null)m.entries[lid].auditoria=parseInt(g('man-au'))||0;
+  saveData();showToast('Ajuste salvo!');
+}
+
+// ════════════════════════════════════════════════════════════
+// CAMPANHAS — novo formato com pontuação
+// ════════════════════════════════════════════════════════════
+function pageCampanhas(){
+  var lo=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  var list=!S.campanhas.length?'<div class="empty">Nenhuma campanha.</div>':
+    S.campanhas.map(function(c){
+      var ln=c.lawyer==='todos'?'Toda a equipe':(S.lawyers.find(function(l){return l.id===c.lawyer;})||{name:'—'}).name;
+      var pontosHtml=c.pontos?'<div style="font-size:11px;color:var(--mt);margin-top:6px">'+esc(c.pontos)+'</div>':'';
+      var metaHtml=c.meta?'<div style="font-size:11px;color:var(--d)">🎯 Meta: '+fmt(c.meta)+'</div>':'';
+      return'<div class="card" style="margin-bottom:10px">'+
+        '<div style="display:flex;align-items:flex-start;gap:10px">'+
+          '<div style="flex:1"><div style="font-weight:700;font-size:14px">🏆 '+esc(c.nome)+'</div>'+
+          '<div style="font-size:12px;color:var(--mt);margin-top:4px">'+ln+' · Prêmio total: <strong>'+fmt(c.valor)+'</strong></div>'+
+          metaHtml+pontosHtml+
+          (c.premiacao?'<div style="font-size:12px;margin-top:6px;background:var(--vl);padding:8px;border-radius:6px;white-space:pre-line">'+esc(c.premiacao)+'</div>':'')+
+          '</div>'+
+          '<button class="btn bd2 bsm" onclick="removeCamp(\''+c.id+'\')">✕</button>'+
+        '</div></div>';
+    }).join('');
+  return'<div class="page-title">'+I.campanhas+' Campanhas</div>'+
+  '<div class="card">'+
+    '<div class="g3" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Nome da Campanha *</label><input type="text" id="cn" placeholder="Ex: Campanha Coletiva Mensal"/></div>'+
+      '<div class="fg"><label>Participantes</label><select id="cl"><option value="todos">Toda a equipe</option>'+lo+'</select></div>'+
+      '<div class="fg"><label>Valor total do prêmio (R$)</label><input type="number" id="cv3" min="0" placeholder="0" step="0.01"/></div>'+
+    '</div>'+
+    '<div class="g2" style="margin-bottom:10px">'+
+      '<div class="fg"><label>Meta de liquidação (R$)</label><input type="number" id="c-meta" min="0" placeholder="Ex: 1950000" step="1000"/></div>'+
+      '<div class="fg"><label>Pontuação (ex: Diligência=5, CS=5, Acordo=20, Gatilho=100pts)</label><input type="text" id="c-pontos" placeholder="Diligências=5pts, CS=5pts, Acordo=20pts | Gatilho: 100pts"/></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-bottom:10px"><label>Premiação (detalhes dos prêmios, ex: 1°=R$650, 2°=R$450...)</label><textarea id="c-prem" rows="3" placeholder="🥇 1º Lugar – R$ 650,00&#10;🥈 2º Lugar – R$ 450,00&#10;Meta semana: +R$ 50,00 p/ todos"></textarea></div>'+
+    '<div style="display:flex;justify-content:flex-end"><button class="btn bp" onclick="addCamp()">+ Adicionar Campanha</button></div>'+
+  '</div>'+
+  list;
+}
+function addCamp(){
+  var n=(document.getElementById('cn').value||'').trim();
+  var l=document.getElementById('cl').value;
+  var v=parseFloat(document.getElementById('cv3').value)||0;
+  var meta=parseFloat(document.getElementById('c-meta').value)||0;
+  var pontos=(document.getElementById('c-pontos').value||'').trim();
+  var prem=(document.getElementById('c-prem').value||'').trim();
+  if(!n){alert('Informe o nome.');return;}
+  S.campanhas.push({id:uid(),nome:n,lawyer:l,valor:v,meta:meta,pontos:pontos,premiacao:prem});
+  saveData();navigate('campanhas');
+}
+function removeCamp(id){if(!confirm('Remover campanha?'))return;S.campanhas=S.campanhas.filter(function(c){return c.id!==id;});saveData();navigate('campanhas');}
+
+// ════════════════════════════════════════════════════════════
+// CALC ENGINE
+// ════════════════════════════════════════════════════════════
+function calc(lid){
+  var l=S.lawyers.find(function(x){return x.id===lid;});if(!l)return null;
+  var m=getMes();var e=m.entries[lid]||{processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+  var cP=(e.processos||[]).reduce(function(s,p){return s+(p.valor<10000?50:100);},0);
+  var cPV=(e.procValid||0)*5,cCV=(e.contValid||0)*2,cCapa=(e.capaCapa||0)*10,cAud=(e.auditoria||0)*10;
+  var ve=e.volEntradas||0,cEnt=ve>=500000?Math.floor(ve/100000)*100:0;
+  var vl=e.volLiquidado||0,cLiq=vl>=600000?Math.floor(vl/100000)*100:0;
+  var cCamp=S.campanhas.reduce(function(s,c){return s+(c.lawyer==='todos'||c.lawyer===lid?c.valor:0);},0);
+  var total=l.prolabore+cP+cPV+cCV+cCapa+cAud+cEnt+cLiq+cCamp;
+  return{lawyer:l,entry:e,cP:cP,cPV:cPV,cCV:cCV,cCapa:cCapa,cAud:cAud,cEnt:cEnt,cLiq:cLiq,cCamp:cCamp,total:total};
+}
+
+// ════════════════════════════════════════════════════════════
+// ADVOGADOS / RESUMO
+// ════════════════════════════════════════════════════════════
+function pageAdvogados(){
+  var opts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  return'<div class="page-title">'+I.advogados+' Comissões por Advogado</div>'+
+  '<div class="fg" style="max-width:300px;margin-bottom:16px"><select id="detail-sel" onchange="showDetail(this.value)"><option value="">Selecione...</option>'+opts+'</select></div>'+
+  '<div id="detail-content"><div class="empty">Selecione um advogado.</div></div>';
+}
+function showDetail(lid){
+  if(!lid)return;var c=calc(lid);if(!c)return;var e=c.entry;
+  var items=[{l:'Pró-labore fixo',v:c.lawyer.prolabore},{l:'Processos liquidados ('+(e.processos||[]).length+')',v:c.cP},{l:'Processos validados ('+(e.procValid||0)+')',v:c.cPV},{l:'Contratos validados ('+(e.contValid||0)+')',v:c.cCV},{l:'Capa a capa ('+(e.capaCapa||0)+')',v:c.cCapa},{l:'Auditoria ('+(e.auditoria||0)+')',v:c.cAud},{l:'Bônus entradas',v:c.cEnt},{l:'Bônus liquidação',v:c.cLiq},{l:'Campanhas',v:c.cCamp}];
+  var m='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"><div class="mc"><div class="ml">Total</div><div class="mv">'+fmt(c.total)+'</div></div><div class="mc"><div class="ml">Pró-labore</div><div class="mv">'+fmt(c.lawyer.prolabore)+'</div></div><div class="mc gold"><div class="ml">Comissões</div><div class="mv gold">'+fmt(c.total-c.lawyer.prolabore)+'</div></div></div>';
+  var rows=items.map(function(it){return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid #eef1f0;font-size:13px"><div style="color:var(--mt)">'+it.l+'</div><div>'+fmt(it.v)+'</div></div>';}).join('');
+  document.getElementById('detail-content').innerHTML=m+'<div class="card">'+rows+'<div style="display:flex;justify-content:space-between;padding:11px 0 0;font-size:15px;font-weight:700"><div>Total a pagar</div><div style="color:var(--v)">'+fmt(c.total)+'</div></div></div>';
+}
+function pageResumo(){
+  if(!S.lawyers.length)return'<div class="page-title">'+I.resumo+' Resumo Consolidado</div><div class="card"><div class="empty">Cadastre advogados em Operacional.</div></div>';
+  var res=S.lawyers.map(function(l){return calc(l.id);});
+  var tP=res.reduce(function(s,r){return s+r.lawyer.prolabore;},0);
+  var tC=res.reduce(function(s,r){return s+(r.total-r.lawyer.prolabore);},0);
+  var tG=tP+tC;
+  var tbody=res.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9;';return'<tr><td style="'+bg+'"><div style="display:flex;align-items:center;gap:9px"><div class="av" style="width:28px;height:28px;font-size:10px;'+avSt(i)+'">'+ini(r.lawyer.name)+'</div>'+r.lawyer.name+'</div></td><td class="r" style="'+bg+'">'+fmt(r.lawyer.prolabore)+'</td><td class="r" style="'+bg+'">'+fmt(r.total-r.lawyer.prolabore)+'</td><td class="r" style="'+bg+';font-weight:700">'+fmt(r.total)+'</td></tr>';}).join('');
+  return'<div class="page-title">'+I.resumo+' Resumo Consolidado</div>'+
+  '<div class="metrics"><div class="mc"><div class="ml">Total geral</div><div class="mv">'+fmt(tG)+'</div></div><div class="mc gold"><div class="ml">Pró-labore total</div><div class="mv gold">'+fmt(tP)+'</div></div><div class="mc"><div class="ml">Comissões total</div><div class="mv">'+fmt(tC)+'</div></div><div class="mc blue"><div class="ml">Advogados</div><div class="mv blue">'+S.lawyers.length+'</div></div></div>'+
+  '<div class="card" style="padding:0;overflow-x:auto"><table class="tbl"><thead><tr><th>Advogado</th><th class="r">Pró-labore</th><th class="r">Comissões</th><th class="r">Total</th></tr></thead><tbody>'+tbody+'<tr class="foot"><td>TOTAL</td><td class="r">'+fmt(tP)+'</td><td class="r">'+fmt(tC)+'</td><td class="r">'+fmt(tG)+'</td></tr></tbody></table></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// REL. LIQUIDADOS — importação robusta + processos cadastrados
+// ════════════════════════════════════════════════════════════
+function pageRelLiquidados(){
+  var m=getMes();var st=m.relLiqData&&m.relLiqData.length?m.relLiqData.length+' processos':'Nenhum arquivo';
+  var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  return'<div class="page-title">'+I.relLiq+' Rel. Liquidados <button class="print-btn no-print" onclick="imprimirRelLiq()">Imprimir / PDF</button></div>'+
+  '<label class="imp" for="file-rel-liq" style="margin-bottom:14px"><input type="file" id="file-rel-liq" class="fhide" accept=".xlsx,.xls" onchange="importRelLiq(this)"/><div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div><div class="imp-text"><div class="imp-title">Importar planilha de liquidados</div><div class="imp-sub">ADVOGADO · PROCESSOS · VALOR · LIQUIDAÇÃO · DATA · TITULARIDADE</div></div><span class="imp-status" id="rel-liq-status">'+st+'</span></label>'+
+  '<div class="filter-bar no-print">'+
+    '<div class="fg"><label>Tipo</label><select id="rl-tipo"><option value="todos">Todos</option><option value="Total">Liq. Total</option><option value="Parcial">Liq. Parcial</option></select></div>'+
+    '<div class="fg"><label>Empresa</label><select id="rl-emp"><option value="todos">Todas</option><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+    '<div class="fg"><label>Advogado</label><select id="rl-adv"><option value="todos">Todos</option>'+advOpts+'</select></div>'+
+    '<div class="fg"><label>Data início</label><input type="date" id="rl-di"/></div>'+
+    '<div class="fg"><label>Data fim</label><input type="date" id="rl-df"/></div>'+
+    '<button class="btn bp" onclick="renderRelLiq()">Filtrar</button>'+
+  '</div>'+
+  '<div id="rel-liq-content"><div class="empty">Clique em Filtrar para gerar o relatório.</div></div>';
+}
+function importRelLiq(input){
+  if(!input.files.length)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var wb=XLSX.read(e.target.result,{type:'array',cellDates:true,raw:false});
+      var ws=wb.Sheets[wb.SheetNames[0]];
+      var rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});
+      if(!rows.length){showToast('Arquivo vazio!');input.value='';return;}
+      var keys=Object.keys(rows[0]);
+      var data=[],byAdv={},dashArr=[];
+      rows.forEach(function(r){
+        var adv=normAdv(xlsxGet(r,keys,['ADVOGADO'],false));
+        var val=xlsxGet(r,keys,['VALOR'],true);
+        var liq=xlsxGet(r,keys,['LIQUID'],false);
+        var proc=xlsxGet(r,keys,['PROCESSO'],false);
+        var datRaw=xlsxGet(r,keys,['DATA'],false);
+        var tit=xlsxGet(r,keys,['TITULARIDADE','TITULAR'],false).toUpperCase();
+        var empresa=tit.indexOf('FIDC')>=0?'FIDC':'PBL';
+        var dat=parseDataBR(datRaw);
+        if(!adv||adv==='ADVOGADO')return;
+        var tipo=liq.toUpperCase().indexOf('PARCIAL')>=0?'Parcial':'Total';
+        data.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:proc,val:val,tipo:tipo,data:dat,empresa:empresa});
+        dashArr.push({adv:adv,val:val,tipo:tipo,empresa:empresa});
+        if(!byAdv[adv])byAdv[adv]=[];
+        byAdv[adv].push({ref:proc,valor:val,tipo:tipo});
+      });
+      if(!data.length){showToast('Nenhum dado. Verifique as colunas ADVOGADO e VALOR.');input.value='';return;}
+      var m=getMes();
+      m.relLiqData=data;m.dashData=dashArr;
+      var matched=distribuirEntries(byAdv);
+      var novosL=lancarEntradasFinanceiro(data);
+      var el=document.getElementById('rel-liq-status');if(el)el.textContent=data.length+' processos';
+      saveData();
+      showToast(data.length+' processos! '+matched+' adv. '+novosL+' entradas lançadas!');
+    }catch(err){showToast('Erro: '+err.message);console.error(err);}
+    input.value='';
+  };
+  reader.readAsArrayBuffer(input.files[0]);
+}
+function renderRelLiq(){
+  var m=getMes();
+  var data=m.relLiqData||[];
+  // Também pegar de processos cadastrados se não tiver importação
+  if(!data.length){
+    S.processos.filter(function(p){return p.status!=='pendente';}).forEach(function(p){
+      var rec=(p.recebimentos||[]).reduce(function(s,r){return s+(r.valor||0);},0);
+      var adv=normAdv((S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:p.advogadoId||'?'}).name);
+      data.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:p.numero,val:rec,tipo:p.status==='liquidado_parcial'?'Parcial':'Total',data:((p.recebimentos||[])[0]||{}).data||'',empresa:p.empresa||'PBL'});
+    });
+  }
+  var tipo=document.getElementById('rl-tipo').value;
+  var empF=document.getElementById('rl-emp').value;
+  var advF=document.getElementById('rl-adv').value;
+  var di=document.getElementById('rl-di').value;
+  var df=document.getElementById('rl-df').value;
+  var f=data.filter(function(r){
+    var l=advF!=='todos'?(S.lawyers.find(function(x){return x.id===advF;})||{name:''}):{name:''};
+    var advMatch=advF==='todos'||normAdv(l.name)===r.adv||r.adv.startsWith(normAdv(l.name).split(' ')[0]);
+    return(tipo==='todos'||r.tipo===tipo)&&(empF==='todos'||(r.empresa||'PBL')===empF)&&advMatch&&(!di||r.data>=di)&&(!df||r.data<=df||!r.data);
+  });
+  var totV=f.reduce(function(s,r){return s+r.val;},0);
+  var totT=f.filter(function(r){return r.tipo==='Total';}).reduce(function(s,r){return s+r.val;},0);
+  var totP=f.filter(function(r){return r.tipo==='Parcial';}).reduce(function(s,r){return s+r.val;},0);
+  var rows=f.map(function(r){
+    var sb=r.tipo==='Total'?'<span class="badge b-tot">Total</span>':'<span class="badge b-par">Parcial</span>';
+    var emp2=r.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    return'<tr><td>'+fmtDate(r.data)+'</td><td>'+emp2+'</td><td>'+esc(r.advNome)+'</td><td style="font-size:11px">'+esc(r.proc)+'</td><td>'+sb+'</td><td class="r">'+fmt(r.val)+'</td></tr>';
+  }).join('');
+  var html=f.length?
+    '<div class="metrics" style="margin-bottom:14px">'+
+      '<div class="mc"><div class="ml">Total processos</div><div class="mv">'+f.length+'</div></div>'+
+      '<div class="mc gold"><div class="ml">Total liquidado</div><div class="mv gold">'+fmt(totV)+'</div></div>'+
+      '<div class="mc"><div class="ml">Liq. Total</div><div class="mv">'+fmt(totT)+'</div></div>'+
+      '<div class="mc blue"><div class="ml">Liq. Parcial</div><div class="mv blue">'+fmt(totP)+'</div></div>'+
+    '</div>'+
+    '<div class="card" style="padding:0;overflow-x:auto"><table class="tbl"><thead><tr><th>Data</th><th>Empresa</th><th>Advogado</th><th>N° Processo</th><th>Tipo</th><th class="r">Valor</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody><tfoot><tr class="foot"><td colspan="5">TOTAL</td><td class="r">'+fmt(totV)+'</td></tr></tfoot></table></div>':
+    '<div class="empty">Nenhum resultado com os filtros selecionados.</div>';
+  document.getElementById('rel-liq-content').innerHTML=html;
+}
+function imprimirRelLiq(){renderRelLiq();setTimeout(function(){window.print();},300);}
+
+// ════════════════════════════════════════════════════════════
+// PREVISÃO DE ENTRADAS
+// ════════════════════════════════════════════════════════════
+function pagePrevisaoEntradas(){
+  return'<div class="page-title">'+I.previsao+' Previsão de Entradas <button class="print-btn no-print" onclick="imprimirPrev()">Imprimir / PDF</button></div>'+
+  '<div class="filter-bar no-print">'+
+    '<div class="fg"><label>Empresa</label><select id="prev-emp"><option value="todos">Todas</option><option value="PBL">PBL</option><option value="FIDC">FIDC</option></select></div>'+
+    '<div class="fg"><label>Advogado</label><select id="prev-adv"><option value="todos">Todos</option>'+S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('')+'</select></div>'+
+    '<div class="fg"><label>Matéria</label><input type="text" id="prev-mat" placeholder="RPV, Precatório..."/></div>'+
+    '<input class="search-input" id="prev-q" placeholder="Buscar cliente ou processo..."/>'+
+    '<button class="btn bp" onclick="renderPrev()">Filtrar</button>'+
+  '</div>'+
+  '<div id="prev-content"><div class="empty">Clique em Filtrar.</div></div>';
+}
+function renderPrev(){
+  var empF=document.getElementById('prev-emp').value;
+  var adv=document.getElementById('prev-adv').value;
+  var mat=(document.getElementById('prev-mat').value||'').toLowerCase();
+  var q=(document.getElementById('prev-q').value||'').toLowerCase();
+  var f=S.processos.filter(function(p){
+    if(p.status!=='pendente')return false;
+    if(empF!=='todos'&&(p.empresa||'PBL')!==empF)return false;
+    if(adv!=='todos'&&p.advogadoId!==adv)return false;
+    if(mat&&!(p.materia||'').toLowerCase().includes(mat))return false;
+    if(q&&!(p.cliente||'').toLowerCase().includes(q)&&!(p.numero||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  var tP=f.reduce(function(s,p){return s+(p.valorCliente||0);},0);
+  var tC=f.reduce(function(s,p){return s+(p.valorCompra||0);},0);
+  var tCn=f.reduce(function(s,p){return s+(p.valorCondenacao||0);},0);
+  var rows=f.map(function(p){
+    var an=(S.lawyers.find(function(l){return l.id===p.advogadoId;})||{name:'—'}).name;
+    var de=p.valorCondenacao?(((p.valorCondenacao-p.valorCompra)/p.valorCondenacao)*100).toFixed(2):0;
+    var di=p.dataCompra?Math.floor((new Date()-new Date(p.dataCompra))/(864e5)):0;
+    var emp2=p.empresa==='FIDC'?'<span class="emp-fidc">FIDC</span>':'<span class="emp-pbl">PBL</span>';
+    return'<tr><td>'+emp2+'</td><td>'+esc(p.cliente)+'</td><td style="font-size:10px">'+esc(p.numero)+'</td><td>'+esc(an)+'</td><td>'+fmtDate(p.dataCompra)+'</td><td class="r">'+di+'</td><td class="r">'+fmt(p.valorCondenacao)+'</td><td class="r">'+fmt(p.valorCliente)+'</td><td class="r">'+fmt(p.valorCompra)+'</td><td class="r">'+de+'%</td></tr>';
+  }).join('');
+  var html=f.length?
+    '<div class="metrics" style="margin-bottom:14px"><div class="mc blue"><div class="ml">Pendentes</div><div class="mv blue">'+f.length+'</div></div><div class="mc"><div class="ml">Vl. Condenação</div><div class="mv">'+fmt(tCn)+'</div></div><div class="mc gold"><div class="ml">Previsão Entrada</div><div class="mv gold">'+fmt(tP)+'</div></div><div class="mc"><div class="ml">Prev. Faturamento</div><div class="mv">'+fmt(tP-tC)+'</div></div></div>'+
+    '<div class="card" style="padding:0;overflow-x:auto"><table class="tbl"><thead><tr><th>Empresa</th><th>Cliente</th><th>N° Processo</th><th>Advogado</th><th>Data Compra</th><th class="r">Dias</th><th class="r">Vl. Condenação</th><th class="r">Vl. Cliente</th><th class="r">Vl. Compra</th><th class="r">Deságio %</th></tr></thead><tbody>'+rows+'</tbody><tfoot><tr class="foot"><td colspan="6">TOTAL</td><td class="r">'+fmt(tCn)+'</td><td class="r">'+fmt(tP)+'</td><td class="r">'+fmt(tC)+'</td><td></td></tr></tfoot></table></div>':
+    '<div class="empty">Nenhum processo pendente.</div>';
+  document.getElementById('prev-content').innerHTML=html;
+}
+function imprimirPrev(){renderPrev();setTimeout(function(){window.print();},300);}
+
+// ════════════════════════════════════════════════════════════
+// MINHA COMISSÃO / USUÁRIOS
+// ════════════════════════════════════════════════════════════
+function pageMinhaComissao(){
+  if(!currentUser||!currentUser.lawyerId)return'<div class="empty">Sem dados.</div>';
+  var lid=currentUser.lawyerId;var l=S.lawyers.find(function(x){return x.id===lid;});
+  if(!l)return'<div class="card"><div class="empty">Perfil não configurado pelo administrador ainda.</div></div>';
+  var c=calc(lid);var e=c.entry;
+  var items=[{l:'Pró-labore fixo',v:c.lawyer.prolabore},{l:'Processos liquidados ('+(e.processos||[]).length+')',v:c.cP},{l:'Processos validados ('+(e.procValid||0)+')',v:c.cPV},{l:'Contratos validados ('+(e.contValid||0)+')',v:c.cCV},{l:'Capa a capa ('+(e.capaCapa||0)+')',v:c.cCapa},{l:'Auditoria ('+(e.auditoria||0)+')',v:c.cAud},{l:'Bônus entradas',v:c.cEnt},{l:'Bônus liquidação',v:c.cLiq},{l:'Campanhas',v:c.cCamp}];
+  var m2='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px"><div class="mc"><div class="ml">Total a receber</div><div class="mv">'+fmt(c.total)+'</div></div><div class="mc"><div class="ml">Pró-labore</div><div class="mv">'+fmt(c.lawyer.prolabore)+'</div></div><div class="mc gold"><div class="ml">Comissões</div><div class="mv gold">'+fmt(c.total-c.lawyer.prolabore)+'</div></div></div>';
+  var rows=items.map(function(it){return'<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid #eef1f0;font-size:13px"><div style="color:var(--mt)">'+it.l+'</div><div>'+fmt(it.v)+'</div></div>';}).join('');
+  var per=document.getElementById('period-lbl')?document.getElementById('period-lbl').textContent:'';
+  return'<div class="page-title">'+I.comissao+' Olá, '+esc(c.lawyer.name)+'</div>'+
+  '<div style="font-size:12px;color:var(--mt);margin-bottom:16px">Período: '+per+'</div>'+m2+
+  '<div class="card">'+rows+'<div style="display:flex;justify-content:space-between;padding:11px 0 0;font-size:15px;font-weight:700"><div>Total a pagar</div><div style="color:var(--v)">'+fmt(c.total)+'</div></div></div>';
+}
+function pageUsuarios(){
+  var rows=USERS.map(function(u,i){
+    var rb=u.role==='admin'?'<span class="badge b-green">Admin</span>':'<span class="badge b-par">Advogado</span>';
+    return'<div class="lrow"><div class="av" style="'+avSt(i)+'">'+ini(u.name)+'</div><div class="ln">'+esc(u.name)+'</div><div style="font-size:11px;color:var(--mt)">@'+u.username+'</div>'+rb+'<div style="font-size:11px;font-family:monospace;background:#f4f4f4;padding:3px 8px;border-radius:6px;margin-left:8px">'+u.password+'</div></div>';
+  }).join('');
+  return'<div class="page-title">'+I.usuarios+' Usuários do Sistema</div>'+
+  '<div class="card" style="margin-bottom:8px"><p style="font-size:12px;color:var(--mt)">Cada advogado acessa apenas sua própria comissão. O Admin vê tudo.</p></div>'+
+  '<div class="card">'+rows+'</div>';
+}
+
+</script>
+</body>
+</html>
