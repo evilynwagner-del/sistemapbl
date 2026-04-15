@@ -514,9 +514,7 @@ function importDashboard(input){
         var fn2=key.split(' ')[0];
         var foundKey=Object.keys(byAdv).find(function(k){return k===key||k===fn2||fn2===k||fn2.startsWith(k.split(' ')[0])||k.startsWith(fn2);});
         if(foundKey){
-          if(!S.entries[l.id])S.entries[l.id]={processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+          if(!S.entries[l.id])S.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
           S.entries[l.id].processos=byAdv[foundKey];
           S.entries[l.id].volLiquidado=byAdv[foundKey].reduce(function(s,p){return s+p.valor;},0);
           matched++;
@@ -892,9 +890,7 @@ function importLiqGeral(input){
       var fn2=key.split(' ')[0];
       var foundKey=Object.keys(byAdv).find(function(k){return k===key||fn2===k||fn2.startsWith(k.split(' ')[0])||k.startsWith(fn2);});
       if(foundKey){
-        if(!S.entries[l.id])S.entries[l.id]={processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+        if(!S.entries[l.id])S.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
         S.entries[l.id].processos=byAdv[foundKey];
         S.entries[l.id].volLiquidado=byAdv[foundKey].reduce(function(s,p){return s+p.valor;},0);
         matched++;total+=byAdv[foundKey].length;
@@ -906,15 +902,9 @@ function importLiqGeral(input){
   };
   reader.readAsArrayBuffer(input.files[0]);
 }
-function importValGeral(input){if(!input.files.length)return;readXlsx(input.files[0],function(rows){var byAdv={};rows.forEach(function(r){var adv=normAdv(r['ADVOGADO']||r[2]||'');var obs=String(r['OBS']||r[3]||'').toUpperCase();if(!adv||adv==='ADVOGADO')return;if(!byAdv[adv])byAdv[adv]={pv:0,cv:0};if(obs.includes('VALIDADO')&&!obs.includes('NAO APROVADO')&&!obs.includes('NÃO APROVADO')&&!obs.includes('FALTA CONTRATO')){if(obs.includes('CONTRATO'))byAdv[adv].cv++;else byAdv[adv].pv++;}});var matched=0;S.lawyers.forEach(function(l){var key=normAdv(l.name);var fn=key.split(' ')[0];var found=byAdv[key]||byAdv[Object.keys(byAdv).find(function(k){return k.startsWith(fn);})||''];if(found){if(!S.entries[l.id])S.entries[l.id]={processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};S.entries[l.id].procValid=found.pv;S.entries[l.id].contValid=found.cv;matched++;}});var el=document.getElementById('s-val');if(el)el.textContent=matched+' adv';saveData();input.value='';showToast('Validações importadas!');});}
-function importDilGeral(input){if(!input.files.length)return;readXlsx(input.files[0],function(rows){var byInit={};rows.forEach(function(r){var contrato=String(r['CONTRATO']||'').trim().toUpperCase();var val2=String(r['VAL.']||r['VAL']||'').trim().toUpperCase();var valor=parseFloat(r['VALOR']||0)||0;if(contrato!=='PAGO'||!val2)return;if(!byInit[val2])byInit[val2]={qtd:0,vol:0};byInit[val2].qtd++;byInit[val2].vol+=valor;});var matched=0;S.lawyers.forEach(function(l){var initials=l.name.trim().split(' ').slice(0,2).map(function(x){return x[0].toUpperCase();}).join('');if(byInit[initials]){if(!S.entries[l.id])S.entries[l.id]={processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};S.entries[l.id].capaCapa=byInit[initials].qtd;S.entries[l.id].volEntradas=byInit[initials].vol;matched++;}});var el=document.getElementById('s-dil');if(el)el.textContent=matched+' adv';saveData();input.value='';showToast('Diligências importadas!');});}
-function saveManual(){var lid=document.getElementById('sel-man').value;if(!lid){showToast('Selecione um advogado.');return;}if(!S.entries[lid])S.entries[lid]={processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};var g=function(id){return document.getElementById(id).value;};if(g('man-pv')!=='')S.entries[lid].procValid=parseInt(g('man-pv'))||0;if(g('man-cv')!=='')S.entries[lid].contValid=parseInt(g('man-cv'))||0;if(g('man-capa')!=='')S.entries[lid].capaCapa=parseInt(g('man-capa'))||0;if(g('man-au')!=='')S.entries[lid].auditoria=parseInt(g('man-au'))||0;if(g('man-ve')!=='')S.entries[lid].volEntradas=parseFloat(g('man-ve'))||0;if(g('man-vl')!=='')S.entries[lid].volLiquidado=parseFloat(g('man-vl'))||0;saveData();showToast('Ajuste salvo!');}
+function importValGeral(input){if(!input.files.length)return;readXlsx(input.files[0],function(rows){var byAdv={};rows.forEach(function(r){var adv=normAdv(r['ADVOGADO']||r[2]||'');var obs=String(r['OBS']||r[3]||'').toUpperCase();if(!adv||adv==='ADVOGADO')return;if(!byAdv[adv])byAdv[adv]={pv:0,cv:0};if(obs.includes('VALIDADO')&&!obs.includes('NAO APROVADO')&&!obs.includes('NÃO APROVADO')&&!obs.includes('FALTA CONTRATO')){if(obs.includes('CONTRATO'))byAdv[adv].cv++;else byAdv[adv].pv++;}});var matched=0;S.lawyers.forEach(function(l){var key=normAdv(l.name);var fn=key.split(' ')[0];var found=byAdv[key]||byAdv[Object.keys(byAdv).find(function(k){return k.startsWith(fn);})||''];if(found){if(!S.entries[l.id])S.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};S.entries[l.id].procValid=found.pv;S.entries[l.id].contValid=found.cv;matched++;}});var el=document.getElementById('s-val');if(el)el.textContent=matched+' adv';saveData();input.value='';showToast('Validações importadas!');});}
+function importDilGeral(input){if(!input.files.length)return;readXlsx(input.files[0],function(rows){var byInit={};rows.forEach(function(r){var contrato=String(r['CONTRATO']||'').trim().toUpperCase();var val2=String(r['VAL.']||r['VAL']||'').trim().toUpperCase();var valor=parseFloat(r['VALOR']||0)||0;if(contrato!=='PAGO'||!val2)return;if(!byInit[val2])byInit[val2]={qtd:0,vol:0};byInit[val2].qtd++;byInit[val2].vol+=valor;});var matched=0;S.lawyers.forEach(function(l){var initials=l.name.trim().split(' ').slice(0,2).map(function(x){return x[0].toUpperCase();}).join('');if(byInit[initials]){if(!S.entries[l.id])S.entries[l.id]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};S.entries[l.id].capaCapa=byInit[initials].qtd;S.entries[l.id].volEntradas=byInit[initials].vol;matched++;}});var el=document.getElementById('s-dil');if(el)el.textContent=matched+' adv';saveData();input.value='';showToast('Diligências importadas!');});}
+function saveManual(){var lid=document.getElementById('sel-man').value;if(!lid){showToast('Selecione um advogado.');return;}if(!S.entries[lid])S.entries[lid]={processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};var g=function(id){return document.getElementById(id).value;};if(g('man-pv')!=='')S.entries[lid].procValid=parseInt(g('man-pv'))||0;if(g('man-cv')!=='')S.entries[lid].contValid=parseInt(g('man-cv'))||0;if(g('man-capa')!=='')S.entries[lid].capaCapa=parseInt(g('man-capa'))||0;if(g('man-au')!=='')S.entries[lid].auditoria=parseInt(g('man-au'))||0;if(g('man-ve')!=='')S.entries[lid].volEntradas=parseFloat(g('man-ve'))||0;if(g('man-vl')!=='')S.entries[lid].volLiquidado=parseFloat(g('man-vl'))||0;saveData();showToast('Ajuste salvo!');}
 
 // ════════════════════════════════════════════════════════════
 // CAMPANHAS
@@ -935,9 +925,7 @@ function removeCamp(id){S.campanhas=S.campanhas.filter(function(c){return c.id!=
 // ════════════════════════════════════════════════════════════
 function calc(lid){
   var l=S.lawyers.find(function(x){return x.id===lid;});if(!l)return null;
-  var e=S.entries[lid]||{processos:[],
-  liqManual:[],
-  distribValidacao:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
+  var e=S.entries[lid]||{processos:[],procValid:0,contValid:0,capaCapa:0,auditoria:0,volEntradas:0,volLiquidado:0};
   var cP=(e.processos||[]).reduce(function(s,p){return s+(p.valor<10000?50:100);},0);
   var cPV=(e.procValid||0)*5,cCV=(e.contValid||0)*2,cCapa=(e.capaCapa||0)*10,cAud=(e.auditoria||0)*10;
   var ve=e.volEntradas||0,cEnt=ve>=500000?Math.floor(ve/100000)*100:0;
@@ -992,27 +980,50 @@ function pageResumo(){
 // REL. LIQUIDADOS
 // ════════════════════════════════════════════════════════════
 function pageRelLiquidados(){
+  var isAdmin=currentUser&&currentUser.role==='admin';
   var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
-  var statusImport=relLiqImportData?relLiqImportData.length+' processos':'Nenhum arquivo';
-  return'<div class="page-title">'+I.reliq+' Relatório de Liquidados <button class="print-btn no-print" onclick="imprimirRelLiq()">Imprimir / PDF</button></div>'+
-  '<div class="card" style="margin-bottom:14px"><div class="g2" style="gap:12px">'+
-    '<div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Opção 1 — Importar planilha</div>'+
-    '<label class="imp" for="file-rel-liq" style="margin-bottom:0"><input type="file" id="file-rel-liq" class="fhide" accept=".xlsx,.xls" onchange="importRelLiq(this)"/>'+
-    '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
-    '<div class="imp-text"><div class="imp-title">Importar planilha geral</div><div class="imp-sub">Colunas: ADVOGADO · PROCESSOS · VALOR · LIQUIDAÇÃO · DATA</div></div>'+
-    '<span class="imp-status" id="rel-liq-status">'+statusImport+'</span></label></div>'+
-    '<div><div style="font-size:13px;font-weight:600;margin-bottom:6px">Opção 2 — Processos cadastrados</div>'+
-    '<div style="font-size:12px;color:var(--mt);background:var(--vl);border-radius:8px;padding:12px 14px">Usa processos cadastrados com status Liquidado.<br/><span style="font-size:11px;margin-top:4px;display:block">Cadastrados: <strong>'+S.processos.filter(function(p){return p.status!=='pendente';}).length+'</strong></span></div></div>'+
-  '</div></div>'+
-  '<div class="filter-bar no-print">'+
-    '<div class="fg"><label>Tipo</label><select id="liq-tipo"><option value="todos">Todos</option><option value="Total">Liq. Total (planilha)</option><option value="Parcial">Liq. Parcial (planilha)</option><option value="liquidado_total">Liq. Total (cadastro)</option><option value="liquidado_parcial">Liq. Parcial (cadastro)</option></select></div>'+
-    '<div class="fg"><label>Advogado</label><select id="liq-adv"><option value="todos">Todos</option>'+advOpts+'</select></div>'+
-    '<div class="fg"><label>Data início</label><input type="date" id="liq-di"/></div>'+
-    '<div class="fg"><label>Data fim</label><input type="date" id="liq-df"/></div>'+
-    '<button class="btn bp" onclick="renderRelLiq()">Gerar Relatório</button>'+
-  '</div>'+
-  '<div id="rel-liq-content"><div class="empty">Configure os filtros e clique em "Gerar Relatório".</div></div>';
+  var manualRows=S.liqManual.slice().sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(m,i){
+    var an=(S.lawyers.find(function(l){return l.id===m.advogadoId;})||{name:'---'}).name;
+    var badge=m.liquidacao==='Parcial'?'<span style="background:#fff3cd;color:#856404;padding:2px 6px;border-radius:4px;font-size:11px">Parcial</span>':'<span style="background:#d4edda;color:#155724;padding:2px 6px;border-radius:4px;font-size:11px">Total</span>';
+    var bg=i%2===0?'':'background:#f7faf9';
+    var del=isAdmin?'<button onclick="delLiqManual('+JSON.stringify(m.id)+')" style="background:none;border:none;color:#c00;cursor:pointer;font-size:18px;line-height:1">x</button>':'';
+    return'<tr style="'+bg+'"><td style="padding:8px 10px">'+esc(m.titularidade||'')+'</td><td style="padding:8px 10px">'+fmtDate(m.data)+'</td><td style="padding:8px 10px;font-size:11px">'+esc(m.processo||'')+'</td><td style="padding:8px 10px">'+an+'</td><td style="padding:8px 10px;text-align:right">'+fmt(m.valor||0)+'</td><td style="padding:8px 10px">'+badge+'</td><td style="padding:8px 10px">'+del+'</td></tr>';
+  }).join('');
+
+  var formHtml=isAdmin?
+    '<div class="st">Lançamento manual</div>'+
+    '<div class="card">'+
+      '<div class="g2" style="margin-bottom:8px">'+
+        '<div class="fg"><label>Titularidade *</label><select id="lm-tit"><option value="">Selecione...</option><option value="PBL Originadora">PBL Originadora</option><option value="FIDC PBL">FIDC PBL</option><option value="CERTJUD">CERTJUD</option></select></div>'+
+        '<div class="fg"><label>Data *</label><input type="date" id="lm-data" value="'+todayStr()+'"/></div>'+
+        '<div class="fg"><label>Advogado *</label><select id="lm-adv"><option value="">Selecione...</option>'+advOpts+'</select></div>'+
+        '<div class="fg"><label>Nº Processo</label><input type="text" id="lm-proc" placeholder="0000000-00.0000.0.00.0000"/></div>'+
+      '</div>'+
+      '<div class="g2" style="margin-bottom:12px">'+
+        '<div class="fg"><label>Valor (R$) *</label><input type="number" id="lm-valor" min="0" step="0.01" placeholder="0,00"/></div>'+
+        '<div class="fg"><label>Liquidação</label><select id="lm-liq"><option value="Total">Total</option><option value="Parcial">Parcial</option></select></div>'+
+      '</div>'+
+      '<div style="text-align:right"><button class="btn bp" onclick="addLiqManual()">+ Registrar</button></div>'+
+    '</div>':
+    '<div class="card" style="background:#e8f4f2;margin-bottom:10px"><p style="font-size:12px;color:#0D5C52;margin:0">Apenas Admin registra lançamentos.</p></div>';
+
+  return'<div class="pg-title">Relatório de Liquidados</div>'+
+    formHtml+
+    '<div class="st">Lançamentos registrados</div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd;margin-bottom:20px">'+
+    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff">'+
+    '<th style="padding:9px 10px;text-align:left">Titularidade</th>'+
+    '<th style="padding:9px 10px;text-align:left">Data</th>'+
+    '<th style="padding:9px 10px;text-align:left">Processo</th>'+
+    '<th style="padding:9px 10px;text-align:left">Advogado</th>'+
+    '<th style="padding:9px 10px;text-align:right">Valor</th>'+
+    '<th style="padding:9px 10px;text-align:left">Liquidação</th>'+
+    '<th></th></tr></thead>'+
+    '<tbody>'+(manualRows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Nenhum lançamento registrado.</td></tr>')+'</tbody>'+
+    '</table></div>';
 }
+
 function importRelLiq(input){if(!input.files.length)return;readXlsx(input.files[0],function(rows){var data=[];rows.forEach(function(r){var adv=normAdv(r['ADVOGADO']||r['Advogado']||'');var val=parseFloat(r['VALOR']||r['Valor']||0)||0;var liq=String(r['LIQUIDAÇÃO']||r['Liquidação']||r['LIQUIDACAO']||'').trim();var proc=String(r['PROCESSOS']||r['Processo']||'').trim();var datRaw=r['DATA']||r['Data']||'';var dat='';if(datRaw){try{var d=new Date(datRaw);if(!isNaN(d))dat=d.toISOString().slice(0,10);}catch(e){}}if(!adv||adv==='ADVOGADO')return;data.push({adv:adv,advNome:adv.charAt(0)+adv.slice(1).toLowerCase(),proc:proc,val:val,tipo:liq.toUpperCase().includes('PARCIAL')?'Parcial':'Total',data:dat});});relLiqImportData=data;var el=document.getElementById('rel-liq-status');if(el)el.textContent=data.length+' processos';showToast(data.length+' processos importados!');input.value='';});}
 function renderRelLiq(){
   var tipo=document.getElementById('liq-tipo').value;
@@ -1124,61 +1135,6 @@ function pageUsuarios(){
 }
 </script>
 <script>
-// ======== NOVAS PAGINAS ========
-
-var TIPOS_DISTRIB=[
-  {id:'proc_val',label:'Valid. Processo',val:5},
-  {id:'prec_val',label:'Valid. Precatorio',val:5},
-  {id:'cont_val',label:'Valid. Contrato',val:2},
-  {id:'capa',label:'Capa a Capa',val:10},
-  {id:'auditoria',label:'Auditoria',val:10}
-];
-
-function pageDistrib(){
-  var isAdmin=currentUser&&currentUser.role==='admin';
-  var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
-  var tipoOpts=TIPOS_DISTRIB.map(function(t){return'<option value="'+t.id+'">'+t.label+' (R$'+t.val+')</option>';}).join('');
-  var rows=S.distribValidacao.slice().sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(m,i){
-    var an=(S.lawyers.find(function(l){return l.id===m.advogadoId;})||{name:'---'}).name;
-    var tp=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;})||{label:m.tipo,val:0};
-    var bg=i%2===0?'':'background:#f7faf9';
-    var del=isAdmin?'<button onclick="delDistrib('+JSON.stringify(m.id)+')" style="background:none;border:none;color:#c00;cursor:pointer;font-size:18px;line-height:1">x</button>':'';
-    return'<tr style="'+bg+'"><td style="padding:8px">'+fmtDate(m.data)+'</td><td style="padding:8px">'+esc(m.cliente||'')+'</td><td style="padding:8px">'+an+'</td><td style="padding:8px">'+tp.label+'</td><td style="padding:8px;text-align:right;color:#1D6B3A;font-weight:600">R$'+tp.val+'</td><td style="padding:8px;font-size:11px">'+esc(m.obs||'')+'</td><td style="padding:8px">'+del+'</td></tr>';
-  }).join('');
-  var total=S.distribValidacao.reduce(function(s,m){var t=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;});return s+(t?t.val:0);},0);
-  return'<div class="pg-title">Distribuição de Validações</div>'+
-    '<div class="card"><div class="g2">'+
-    '<div class="fg"><label>Data *</label><input type="date" id="dv-data" value="'+todayStr()+'"/></div>'+
-    '<div class="fg"><label>Cliente / Processo</label><input type="text" id="dv-cli" placeholder="Nome ou número"/></div>'+
-    '<div class="fg"><label>Advogado *</label><select id="dv-adv"><option value="">Selecione...</option>'+advOpts+'</select></div>'+
-    '<div class="fg"><label>Tipo *</label><select id="dv-tipo">'+tipoOpts+'</select></div>'+
-    '</div>'+
-    '<div class="fg" style="margin-top:8px"><label>Observação</label><input type="text" id="dv-obs" placeholder="Detalhes (opcional)"/></div>'+
-    '<div style="text-align:right;margin-top:12px"><button class="btn bp" onclick="addDistrib()">+ Registrar</button></div>'+
-    '</div>'+
-    '<div class="st">Histórico — Comissão total: <strong style="color:#1D6B3A">R$'+total+'</strong></div>'+
-    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd">'+
-    '<table style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px;text-align:left">Data</th><th style="padding:9px;text-align:left">Cliente</th><th style="padding:9px;text-align:left">Advogado</th><th style="padding:9px;text-align:left">Tipo</th><th style="padding:9px;text-align:right">Comissão</th><th style="padding:9px;text-align:left">Obs.</th><th></th></tr></thead>'+
-    '<tbody>'+(rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Nenhum lançamento.</td></tr>')+'</tbody>'+
-    '</table></div>';
-}
-function addDistrib(){
-  var data=document.getElementById('dv-data').value;
-  var cli=(document.getElementById('dv-cli').value||'').trim();
-  var adv=document.getElementById('dv-adv').value;
-  var tipo=document.getElementById('dv-tipo').value;
-  var obs=(document.getElementById('dv-obs').value||'').trim();
-  if(!data||!adv){alert('Preencha Data e Advogado.');return;}
-  S.distribValidacao.push({id:uid(),data:data,cliente:cli,advogadoId:adv,tipo:tipo,obs:obs,criadoPor:currentUser.id});
-  saveData();navigate('distrib');
-}
-function delDistrib(id){
-  if(!confirm('Excluir este lançamento?'))return;
-  S.distribValidacao=S.distribValidacao.filter(function(m){return m.id!==id;});
-  saveData();navigate('distrib');
-}
-
 function addLiqManual(){
   var tit=document.getElementById('lm-tit').value;
   var data=document.getElementById('lm-data').value;
@@ -1192,18 +1148,68 @@ function addLiqManual(){
 }
 function delLiqManual(id){
   if(currentUser.role!=='admin'){alert('Apenas Admin pode excluir.');return;}
-  if(!confirm('Excluir?'))return;
+  if(!confirm('Excluir lançamento?'))return;
   S.liqManual=S.liqManual.filter(function(m){return m.id!==id;});
   saveData();navigate('reliquidados');
+}
+
+var TIPOS_DISTRIB=[
+  {id:'proc_val',label:'Valid. Processo',val:5},
+  {id:'prec_val',label:'Valid. Precatório',val:5},
+  {id:'cont_val',label:'Valid. Contrato',val:2},
+  {id:'capa',label:'Capa a Capa',val:10},
+  {id:'auditoria',label:'Auditoria',val:10}
+];
+function pageDistrib(){
+  var isAdmin=currentUser&&currentUser.role==='admin';
+  var advOpts=S.lawyers.map(function(l){return'<option value="'+l.id+'">'+l.name+'</option>';}).join('');
+  var tipoOpts=TIPOS_DISTRIB.map(function(t){return'<option value="'+t.id+'">'+t.label+' (R$'+t.val+')</option>';}).join('');
+  var total=S.distribValidacao.reduce(function(s,m){var t=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;});return s+(t?t.val:0);},0);
+  var rows=S.distribValidacao.slice().sort(function(a,b){return(b.data||'').localeCompare(a.data||'');}).map(function(m,i){
+    var an=(S.lawyers.find(function(l){return l.id===m.advogadoId;})||{name:'---'}).name;
+    var tp=TIPOS_DISTRIB.find(function(t){return t.id===m.tipo;})||{label:m.tipo,val:0};
+    var bg=i%2===0?'':'background:#f7faf9';
+    var del=isAdmin?'<button onclick="delDistrib('+JSON.stringify(m.id)+')" style="background:none;border:none;color:#c00;cursor:pointer;font-size:18px;line-height:1">x</button>':'';
+    return'<tr style="'+bg+'"><td style="padding:8px">'+fmtDate(m.data)+'</td><td style="padding:8px">'+esc(m.cliente||'')+'</td><td style="padding:8px">'+an+'</td><td style="padding:8px">'+tp.label+'</td><td style="padding:8px;text-align:right;color:#1D6B3A;font-weight:600">R$'+tp.val+'</td><td style="padding:8px;font-size:11px">'+esc(m.obs||'')+'</td><td>'+del+'</td></tr>';
+  }).join('');
+  return'<div class="pg-title">Distribuição de Validações</div>'+
+    '<div class="card"><div class="g2">'+
+    '<div class="fg"><label>Data *</label><input type="date" id="dv-data" value="'+todayStr()+'"/></div>'+
+    '<div class="fg"><label>Cliente / Processo</label><input type="text" id="dv-cli" placeholder="Nome ou número"/></div>'+
+    '<div class="fg"><label>Advogado *</label><select id="dv-adv"><option value="">Selecione...</option>'+advOpts+'</select></div>'+
+    '<div class="fg"><label>Tipo *</label><select id="dv-tipo">'+tipoOpts+'</select></div>'+
+    '</div>'+
+    '<div class="fg" style="margin-top:8px"><label>Observação</label><input type="text" id="dv-obs" placeholder="Detalhes (opcional)"/></div>'+
+    '<div style="text-align:right;margin-top:12px"><button class="btn bp" onclick="addDistrib()">+ Registrar</button></div>'+
+    '</div>'+
+    '<div class="st">Histórico — Comissão total: <strong style="color:#1D6B3A">R$'+total+'</strong></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px;text-align:left">Data</th><th style="padding:9px;text-align:left">Cliente</th><th style="padding:9px;text-align:left">Advogado</th><th style="padding:9px;text-align:left">Tipo</th><th style="padding:9px;text-align:right">Comissão</th><th style="padding:9px;text-align:left">Obs.</th><th></th></tr></thead>'+
+    '<tbody>'+(rows||'<tr><td colspan="7" style="text-align:center;padding:20px;color:#888">Nenhum lançamento.</td></tr>')+'</tbody></table></div>';
+}
+function addDistrib(){
+  var data=document.getElementById('dv-data').value;
+  var cli=(document.getElementById('dv-cli').value||'').trim();
+  var adv=document.getElementById('dv-adv').value;
+  var tipo=document.getElementById('dv-tipo').value;
+  var obs=(document.getElementById('dv-obs').value||'').trim();
+  if(!data||!adv){alert('Preencha Data e Advogado.');return;}
+  S.distribValidacao.push({id:uid(),data:data,cliente:cli,advogadoId:adv,tipo:tipo,obs:obs,criadoPor:currentUser.id});
+  saveData();navigate('distrib');
+}
+function delDistrib(id){
+  if(!confirm('Excluir?'))return;
+  S.distribValidacao=S.distribValidacao.filter(function(m){return m.id!==id;});
+  saveData();navigate('distrib');
 }
 
 var relLiq2Data=null;
 function pageRelLiq2(){
   var st=relLiq2Data?relLiq2Data.length+' processos':'Nenhum arquivo';
-  return'<div class="pg-title">Processos Liquidados — CertJud</div>'+
+  return'<div class="pg-title">Proc. Liquidados — CertJud</div>'+
     '<div class="card" style="margin-bottom:14px"><label class="imp" for="f-rl2"><input type="file" id="f-rl2" class="fhide" accept=".xlsx,.xls" onchange="impRelLiq2(this)"/>'+
     '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
-    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Dias / Data / Vl. Compra / Vl. Liquidado / Faturamento / Deságio % / Índice</div></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Dias / Data / Vl. Compra / Vl. Liquidado / Faturamento / Deságio%</div></div>'+
     '<span class="imp-status" id="rl2-st">'+st+'</span></label></div>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
     '<input id="rl2-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1;min-width:150px"/>'+
@@ -1218,13 +1224,12 @@ function impRelLiq2(input){
     relLiq2Data=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
       var dv=getCol(r,['Data','data']);var ds='';
       if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
-      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),
-        proc:String(getCol(r,['Processo','processo'])||'').trim(),
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),
         dias:parseValor(getCol(r,['Dias','dias'])||0),data:ds,
         vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
         vlLiq:parseValor(getCol(r,['Valor Liquidado','valor liquidado'])||0),
         fat:parseValor(getCol(r,['Faturamento','faturamento'])||0),
-        des:parseValor(getCol(r,['Desagio','Deságio','Desagio %','desagio'])||0)};
+        des:parseValor(getCol(r,['Desagio','Deságio','desagio'])||0)};
     });
     var el=document.getElementById('rl2-st');if(el)el.textContent=relLiq2Data.length+' processos';
     showToast(relLiq2Data.length+' importados!');input.value='';
@@ -1237,13 +1242,8 @@ function renderRelLiq2(){
   var f=relLiq2Data.filter(function(r){return(!q||(r.cliente||'').toLowerCase().includes(q)||(r.proc||'').toLowerCase().includes(q))&&(!di||r.data>=di)&&(!df||r.data<=df);});
   var tC=f.reduce(function(s,r){return s+r.vlComp;},0),tL=f.reduce(function(s,r){return s+r.vlLiq;},0),tF=f.reduce(function(s,r){return s+r.fat;},0);
   document.getElementById('rl2-out').innerHTML=
-    '<div class="metrics" style="margin-bottom:16px">'+
-    '<div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div>'+
-    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
-    '<div class="mc gold"><div class="ml">Vl. Liquidado</div><div class="mv gold">'+fmt(tL)+'</div></div>'+
-    '<div class="mc '+(tF>=0?'green':'red')+'"><div class="ml">Faturamento</div><div class="mv">'+fmt(tF)+'</div></div></div>'+
-    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px;text-align:right">Dias</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Vl.Liquidado</th><th style="padding:9px;text-align:right">Faturamento</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
+    '<div class="metrics" style="margin-bottom:16px"><div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div><div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div><div class="mc gold"><div class="ml">Vl. Liquidado</div><div class="mv gold">'+fmt(tL)+'</div></div><div class="mc '+(tF>=0?'green':'red')+'"><div class="ml">Faturamento</div><div class="mv">'+fmt(tF)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px;text-align:right">Dias</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Vl.Liquidado</th><th style="padding:9px;text-align:right">Faturamento</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
     f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px;text-align:right">'+r.dias+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlLiq)+'</td><td style="padding:8px;text-align:right;color:'+(r.fat>=0?'#1D6B3A':'#c00')+'">'+fmt(r.fat)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
     '</tbody></table></div>';
 }
@@ -1254,13 +1254,9 @@ function pageRelComp(){
   return'<div class="pg-title">Processos Comprados</div>'+
     '<div class="card" style="margin-bottom:14px"><label class="imp" for="f-rc"><input type="file" id="f-rc" class="fhide" accept=".xlsx,.xls" onchange="impRelComp(this)"/>'+
     '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
-    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl. Cliente / Vl. Compra / Prev. Ganho / Deságio %</div></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl. Cliente / Vl. Compra / Prev. Ganho / Deságio%</div></div>'+
     '<span class="imp-status" id="rc-st">'+st+'</span></label></div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
-    '<input id="rc-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1;min-width:150px"/>'+
-    '<input type="date" id="rc-di" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
-    '<input type="date" id="rc-df" style="padding:7px;border:1px solid #ccc;border-radius:6px"/>'+
-    '<button class="btn bp" onclick="renderRelComp()">Gerar</button></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"><input id="rc-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1;min-width:150px"/><input type="date" id="rc-di" style="padding:7px;border:1px solid #ccc;border-radius:6px"/><input type="date" id="rc-df" style="padding:7px;border:1px solid #ccc;border-radius:6px"/><button class="btn bp" onclick="renderRelComp()">Gerar</button></div>'+
     '<div id="rc-out"><div class="empty">Importe a planilha e clique em Gerar.</div></div>';
 }
 function impRelComp(input){
@@ -1269,8 +1265,7 @@ function impRelComp(input){
     relCompData=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
       var dv=getCol(r,['Data','data']);var ds='';
       if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
-      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),
-        proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
         vlCli:parseValor(getCol(r,['Valor Cliente','valor cliente'])||0),
         vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
         prevG:parseValor(getCol(r,['Prev. Ganho','prev ganho'])||0),
@@ -1287,13 +1282,8 @@ function renderRelComp(){
   var f=relCompData.filter(function(r){return(!q||(r.cliente||'').toLowerCase().includes(q))&&(!di||r.data>=di)&&(!df||r.data<=df);});
   var tCli=f.reduce(function(s,r){return s+r.vlCli;},0),tC=f.reduce(function(s,r){return s+r.vlComp;},0),tG=f.reduce(function(s,r){return s+r.prevG;},0);
   document.getElementById('rc-out').innerHTML=
-    '<div class="metrics" style="margin-bottom:16px">'+
-    '<div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div>'+
-    '<div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div>'+
-    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
-    '<div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
-    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
+    '<div class="metrics" style="margin-bottom:16px"><div class="mc"><div class="ml">Processos</div><div class="mv">'+f.length+'</div></div><div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div><div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div><div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
     f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlCli)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right;color:#1D6B3A">'+fmt(r.prevG)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
     '</tbody></table></div>';
 }
@@ -1302,7 +1292,7 @@ var relGeralData=null;
 var MESES=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function pageRelGeral(){
   var st=relGeralData?relGeralData.length+' linhas':'Nenhum arquivo';
-  return'<div class="pg-title">Relatório Geral — CertJud</div>'+
+  return'<div class="pg-title">Rel. Geral CertJud</div>'+
     '<div class="card" style="margin-bottom:14px"><label class="imp" for="f-rg"><input type="file" id="f-rg" class="fhide" accept=".xlsx,.xls" onchange="impRelGeral(this)"/>'+
     '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
     '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Ano / Mês / Vl. Processo / Compra Mês / Recebimento Mês / Total / Despesa / Patrimônio Líquido</div></div>'+
@@ -1313,8 +1303,7 @@ function impRelGeral(input){
   if(!input.files.length)return;
   readXlsx(input.files[0],function(rows){
     relGeralData=rows.filter(function(r){return parseValor(getCol(r,['Ano','ano'])||0)>0;}).map(function(r){
-      return{ano:Math.round(parseValor(getCol(r,['Ano','ano'])||0)),
-        mes:Math.round(parseValor(getCol(r,['Mes','Mês','mes'])||0)),
+      return{ano:Math.round(parseValor(getCol(r,['Ano','ano'])||0)),mes:Math.round(parseValor(getCol(r,['Mes','Mês','mes'])||0)),
         vlProc:parseValor(getCol(r,['Valor Processo','valor processo'])||0),
         compra:parseValor(getCol(r,['Compra Mes','Compra Mês','compra mes'])||0),
         receb:parseValor(getCol(r,['Recebimento Mes','Recebimento Mês','recebimento mes'])||0),
@@ -1332,12 +1321,8 @@ function buildGeralTable(){
   var tC=relGeralData.reduce(function(s,r){return s+r.compra;},0);
   var tR=relGeralData.reduce(function(s,r){return s+r.receb;},0);
   var lastPL=relGeralData[relGeralData.length-1].pl;
-  return'<div class="metrics" style="margin:16px 0">'+
-    '<div class="mc blue"><div class="ml">Total Compras</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
-    '<div class="mc gold"><div class="ml">Total Recebimentos</div><div class="mv gold">'+fmt(tR)+'</div></div>'+
-    '<div class="mc green"><div class="ml">Patrimônio Líquido</div><div class="mv green">'+fmt(lastPL)+'</div></div></div>'+
-    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Período</th><th style="padding:9px;text-align:right">Vl.Processos</th><th style="padding:9px;text-align:right">Compra Mês</th><th style="padding:9px;text-align:right">Recebimento Mês</th><th style="padding:9px;text-align:right">Total Carteira</th><th style="padding:9px;text-align:right">Despesa</th><th style="padding:9px;text-align:right">Patrimônio Liq.</th></tr></thead><tbody>'+
+  return'<div class="metrics" style="margin:16px 0"><div class="mc blue"><div class="ml">Total Compras</div><div class="mv blue">'+fmt(tC)+'</div></div><div class="mc gold"><div class="ml">Total Recebimentos</div><div class="mv gold">'+fmt(tR)+'</div></div><div class="mc green"><div class="ml">Patrimônio Líquido</div><div class="mv green">'+fmt(lastPL)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Período</th><th style="padding:9px;text-align:right">Vl.Processos</th><th style="padding:9px;text-align:right">Compra Mês</th><th style="padding:9px;text-align:right">Receb. Mês</th><th style="padding:9px;text-align:right">Total Carteira</th><th style="padding:9px;text-align:right">Despesa</th><th style="padding:9px;text-align:right">Patrimônio Liq.</th></tr></thead><tbody>'+
     relGeralData.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+(MESES[r.mes]||r.mes)+'/'+r.ano+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlProc)+'</td><td style="padding:8px;text-align:right">'+fmt(r.compra)+'</td><td style="padding:8px;text-align:right">'+fmt(r.receb)+'</td><td style="padding:8px;text-align:right">'+fmt(r.total)+'</td><td style="padding:8px;text-align:right">'+fmt(r.desp)+'</td><td style="padding:8px;text-align:right;font-weight:700;color:var(--v)">'+fmt(r.pl)+'</td></tr>';}).join('')+
     '</tbody></table></div>';
 }
@@ -1348,11 +1333,9 @@ function pageRelPend(){
   return'<div class="pg-title">Processos Pendentes</div>'+
     '<div class="card" style="margin-bottom:14px"><label class="imp" for="f-rp"><input type="file" id="f-rp" class="fhide" accept=".xlsx,.xls" onchange="impRelPend(this)"/>'+
     '<div class="imp-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 17l-3-3 1.4-1.4 1.6 1.6 3.6-3.6L13 11l-5 6z"/></svg></div>'+
-    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl. Cliente / Vl. Compra / Prev. Ganho / Prev. Entrada / Deságio %</div></div>'+
+    '<div class="imp-text"><div class="imp-title">Importar planilha</div><div class="imp-sub">Cliente / Processo / Data / Vl. Cliente / Vl. Compra / Prev. Ganho / Prev. Entrada / Deságio%</div></div>'+
     '<span class="imp-status" id="rp-st">'+st+'</span></label></div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
-    '<input id="rp-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1"/>'+
-    '<button class="btn bp" onclick="renderRelPend()">Gerar</button></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px"><input id="rp-q" placeholder="Buscar..." style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;flex:1"/><button class="btn bp" onclick="renderRelPend()">Gerar</button></div>'+
     '<div id="rp-out"><div class="empty">Importe a planilha e clique em Gerar.</div></div>';
 }
 function impRelPend(input){
@@ -1361,8 +1344,7 @@ function impRelPend(input){
     relPendData=rows.filter(function(r){return String(getCol(r,['Cliente','cliente'])||'').trim();}).map(function(r){
       var dv=getCol(r,['Data','data']);var ds='';
       if(dv){try{var d=new Date(String(dv));if(!isNaN(d))ds=d.toISOString().slice(0,10);}catch(e){}}
-      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),
-        proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
+      return{cliente:String(getCol(r,['Cliente','cliente'])||'').trim(),proc:String(getCol(r,['Processo','processo'])||'').trim(),data:ds,
         vlCli:parseValor(getCol(r,['Valor Cliente','valor cliente'])||0),
         vlComp:parseValor(getCol(r,['Valor Compra','valor compra'])||0),
         prevG:parseValor(getCol(r,['Prev. Ganho','prev ganho'])||0),
@@ -1379,13 +1361,8 @@ function renderRelPend(){
   var f=relPendData.filter(function(r){return!q||(r.cliente||'').toLowerCase().includes(q)||(r.proc||'').toLowerCase().includes(q);});
   var tCli=f.reduce(function(s,r){return s+r.vlCli;},0),tC=f.reduce(function(s,r){return s+r.vlComp;},0),tG=f.reduce(function(s,r){return s+r.prevG;},0);
   document.getElementById('rp-out').innerHTML=
-    '<div class="metrics" style="margin-bottom:16px">'+
-    '<div class="mc"><div class="ml">Pendentes</div><div class="mv">'+f.length+'</div></div>'+
-    '<div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div>'+
-    '<div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div>'+
-    '<div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
-    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px">'+
-    '<thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Prev.Entrada</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
+    '<div class="metrics" style="margin-bottom:16px"><div class="mc"><div class="ml">Pendentes</div><div class="mv">'+f.length+'</div></div><div class="mc gold"><div class="ml">Vl. Cliente</div><div class="mv gold">'+fmt(tCli)+'</div></div><div class="mc blue"><div class="ml">Vl. Compra</div><div class="mv blue">'+fmt(tC)+'</div></div><div class="mc green"><div class="ml">Prev. Ganho</div><div class="mv green">'+fmt(tG)+'</div></div></div>'+
+    '<div style="overflow-x:auto;border-radius:8px;border:1px solid #ddd"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:var(--v);color:#fff"><th style="padding:9px">Cliente</th><th style="padding:9px">Processo</th><th style="padding:9px">Data</th><th style="padding:9px;text-align:right">Vl.Cliente</th><th style="padding:9px;text-align:right">Vl.Compra</th><th style="padding:9px;text-align:right">Prev.Ganho</th><th style="padding:9px;text-align:right">Prev.Entrada</th><th style="padding:9px;text-align:right">Deságio%</th></tr></thead><tbody>'+
     f.map(function(r,i){var bg=i%2===0?'':'background:#f7faf9';return'<tr style="'+bg+'"><td style="padding:8px">'+esc(r.cliente)+'</td><td style="padding:8px;font-size:11px">'+esc(r.proc)+'</td><td style="padding:8px">'+fmtDate(r.data)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlCli)+'</td><td style="padding:8px;text-align:right">'+fmt(r.vlComp)+'</td><td style="padding:8px;text-align:right;color:#1D6B3A">'+fmt(r.prevG)+'</td><td style="padding:8px;text-align:right">'+fmt(r.prevE)+'</td><td style="padding:8px;text-align:right">'+r.des.toFixed(2)+'%</td></tr>';}).join('')+
     '</tbody></table></div>';
 }
